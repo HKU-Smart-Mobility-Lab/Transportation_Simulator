@@ -28,6 +28,10 @@ env_params = {
 'simulator_mode' : 'toy_mode',
 'experiment_mode' : 'test',
 'side':4,
-'road_information_mode':'load'
+'road_information_mode':'load',
+'north_lat': 50.104393,
+'south_lat': 40,
+'east_lng': -88.420831,
+'west_lng': -70
 }
 
