@@ -4,7 +4,7 @@ import osmnx as ox
 from config import *
 # this function is to find the cloeset point in openstreetmap to real point.
 # return a tuple(latitude,longitude)
-def find_closest_point(lat,lng, mode = 'id'):
+def find_closest_point_by_big_map(lat,lng, mode = 'id'):
     print("params",env_params['north_lat'], env_params['south_lat'], env_params['east_lng']
          , env_params['west_lng'])
     G = ox.graph_from_bbox(env_params['north_lat'], env_params['south_lat'], env_params['east_lng']
@@ -19,6 +19,12 @@ def find_closest_point(lat,lng, mode = 'id'):
     return point.y,point.x
 
 
+def find_closest_point(lat=40.736828, lng=-73.99477):
+    G = ox.graph_from_bbox(lat + 0.1, lat - 0.1, lng - 0.1, lng + 0.1, network_type='drive_service')
+    x = ox.distance.get_nearest_node(G, (lat, lng), method=None, return_dist=False)
+    nodes = ox.graph_to_gdfs(G, edges=False)
+    point = nodes['geometry'][x]
+    return point.y, point.x
 
 
 if __name__ == "__main__":
