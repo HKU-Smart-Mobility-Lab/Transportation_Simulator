@@ -3,7 +3,7 @@ import numpy as np
 from copy import deepcopy
 import random
 from dispatch_alg import LD
-from math import radians,degrees, cos, sin, asin, sqrt, atan2
+from math import radians, degrees, cos, sin, asin, sqrt, atan2
 from config import *
 import math
 import time
@@ -14,20 +14,18 @@ import networkx as nx
 import pandas as pd
 
 G = ox.graph_from_bbox(env_params['north_lat'], env_params['south_lat'], env_params['east_lng']
-                        , env_params['west_lng'], network_type='drive_service')
+                       , env_params['west_lng'], network_type='drive_service')
 gdf_nodes, gdf_edges = ox.graph_to_gdfs(G)
 lat_list = gdf_nodes['y'].tolist()
 lng_list = gdf_nodes['x'].tolist()
 node_id = gdf_nodes.index.tolist()
 node_id_to_lat_lng = {}
-node_corrd_to_id = {}
 for i in range(len(lat_list)):
     node_id_to_lat_lng[node_id[i]] = (lat_list[i], lng_list[i])
-    node_corrd_to_id[(lat_list[i], lng_list[i])] = node_id[i]
 
 
 # define the function to get zone_id of segment node
-def get_zone(lat, lng):
+def get_zone(lat, lng, center, side, interval):
     if lat < center[1]:
         i = math.floor(side / 2) - math.ceil((center[1] - lat) / interval) + side % 2
     else:
@@ -37,13 +35,13 @@ def get_zone(lat, lng):
         j = math.floor(side / 2) - math.ceil((center[0] - lng) / interval) + side % 2
     else:
         j = math.floor(side / 2) + math.ceil((lng - center[0]) / interval) - 1
-    print(i, j)
     return i * side + j
 
 
-center = ((env_params['east_lng'] + env_params['west_lng']) / 2,(env_params['north_lat'] + env_params['south_lat']) /2)
-print("center: ",center)
-radius = max(abs(env_params['east_lng'] - env_params['west_lng']) / 2, abs(env_params['north_lat'] - env_params['south_lat']) / 2)
+center = (
+(env_params['east_lng'] + env_params['west_lng']) / 2, (env_params['north_lat'] + env_params['south_lat']) / 2)
+radius = max(abs(env_params['east_lng'] - env_params['west_lng']) / 2,
+             abs(env_params['north_lat'] - env_params['south_lat']) / 2)
 side = 4
 interval = 2 * radius / side
 result = pd.DataFrame()
@@ -52,7 +50,7 @@ result['lat'] = lat_list
 result['lng'] = lng_list
 result['node_id'] = gdf_nodes.index.tolist()
 for i in tqdm(range(len(result))):
-  nodelist.append(get_zone(lat_list[i], lng_list[i], center, side, interval))
+    nodelist.append(get_zone(lat_list[i], lng_list[i], center, side, interval))
 result['grid_id'] = nodelist
 
 
@@ -65,7 +63,7 @@ def distance(coord_1, coord_2):
     r = 6371
 
     alat = sin(dlat / 2) ** 2
-    clat = 2 * atan2(alat**0.5, (1-alat)**0.5)
+    clat = 2 * atan2(alat ** 0.5, (1 - alat) ** 0.5)
     lat_dis = clat * r * 1000
 
     alon = sin(dlon / 2) ** 2
@@ -75,6 +73,7 @@ def distance(coord_1, coord_2):
     manhattan_dis = abs(lat_dis) + abs(lon_dis)
 
     return manhattan_dis
+
 
 def distance_array(coord_1, coord_2):
     coord_1 = coord_1.astype(float)
@@ -97,10 +96,11 @@ def distance_array(coord_1, coord_2):
 
     return manhattan_dis
 
+
 # given origin and destination, return itenarary
 
 # 在这里加入ra
-def route_generation_array(origin_coord_array, dest_coord_array, mode = 'complete'):
+def route_generation_array(origin_coord_array, dest_coord_array, mode='complete'):
     print("route generation start")
     # origin_coord_list为 Kx2 的array，第一列为lng，第二列为lat；dest_coord_array同理
     # itinerary_node_list的每一项为一个list，包含了对应路线中的各个节点编号
@@ -112,13 +112,13 @@ def route_generation_array(origin_coord_array, dest_coord_array, mode = 'complet
     itinerary_segment_dis_list = []
     dis_array = []
     if mode == 'complete':
-        #返回完整itinerary
+        # 返回完整itinerary
         itinerary_node_list = ox.distance.shortest_path(G, origin_node_list, dest_node_list, weight='length', cpus=16)
         for itinerary_node in itinerary_node_list:
             itinerary_segment_dis = []
             for i in tqdm(range(len(itinerary_node) - 1)):
                 # dis = nx.shortest_path_length(G, node_id_to_lat_lng[itinerary_node[i]], node_id_to_lat_lng[itinerary_node[i + 1]], weight='length')
-                dis = distance(node_id_to_lat_lng[itinerary_node[i]],node_id_to_lat_lng[itinerary_node[i + 1]])
+                dis = distance(node_id_to_lat_lng[itinerary_node[i]], node_id_to_lat_lng[itinerary_node[i + 1]])
                 itinerary_segment_dis.append(dis)
             dis_array.append(sum(itinerary_segment_dis))
             itinerary_segment_dis_list.append(itinerary_segment_dis)
@@ -134,12 +134,12 @@ def route_generation_array(origin_coord_array, dest_coord_array, mode = 'complet
         #         itinerary_node = [2,3,0]
         #         itinerary_segment_dis = [1, 1, 0]
         #         dis = 2
-            # itinerary_node_list.append(itinerary_node)
-            # itinerary_segment_dis_list.append(itinerary_segment_dis)
-            # dis_array.append(dis)
+        # itinerary_node_list.append(itinerary_node)
+        # itinerary_segment_dis_list.append(itinerary_segment_dis)
+        # dis_array.append(dis)
         # dis_array = np.array(dis_array)
     elif mode == 'drop_end':
-        #对itineray node_list和itineray segment_time_list中的各个item，把末尾节点给drop掉
+        # 对itineray node_list和itineray segment_time_list中的各个item，把末尾节点给drop掉
 
         # a toy example
         # for i in range(origin_coord_array.shape[0]):
@@ -152,22 +152,22 @@ def route_generation_array(origin_coord_array, dest_coord_array, mode = 'complet
         #         itinerary_node = [2, 3]
         #         itinerary_segment_dis = [1, 1]
         #         dis = 2
-            # itinerary_node_list.append(itinerary_node)
-            # itinerary_segment_dis_list.append(itinerary_segment_dis)
-            # dis_array.append(dis)
+        # itinerary_node_list.append(itinerary_node)
+        # itinerary_segment_dis_list.append(itinerary_segment_dis)
+        # dis_array.append(dis)
         # dis_array = np.array(dis_array)
-       itinerary_node_list = ox.distance.shortest_path(G, origin_node_list, dest_node_list, weight='length', cpus=16)
-       for itinerary_node in itinerary_node_list:
+        itinerary_node_list = ox.distance.shortest_path(G, origin_node_list, dest_node_list, weight='length', cpus=16)
+        for itinerary_node in itinerary_node_list:
             itinerary_segment_dis = []
             for i in tqdm(range(len(itinerary_node) - 1)):
                 # dis = nx.shortest_path_length(G, node_id_to_lat_lng[itinerary_node[i]], node_id_to_lat_lng[itinerary_node[i + 1]], weight='length')
-                dis = distance(node_id_to_lat_lng[itinerary_node[i]],node_id_to_lat_lng[itinerary_node[i + 1]])
+                dis = distance(node_id_to_lat_lng[itinerary_node[i]], node_id_to_lat_lng[itinerary_node[i + 1]])
                 itinerary_segment_dis.append(dis)
             dis_array.append(sum(itinerary_segment_dis))
             itinerary_segment_dis_list.append(itinerary_segment_dis)
 
-    dis_array = np.array(dis_array)   
     return itinerary_node_list, itinerary_segment_dis_list, dis_array
+
 
 class GridSystem:
     def __init__(self, **kwargs):
@@ -180,8 +180,9 @@ class GridSystem:
         self.adj_mat = pickle.load(open(data_path + 'adj_matrix.pickle', 'rb'))
 
     def get_basics(self):
-        #output: basic information about the grid network
+        # output: basic information about the grid network
         return self.num_grid
+
 
 class road_network:
     def __init__(self, **kwargs):
@@ -217,7 +218,6 @@ class road_network:
         result['grid_id'] = nodelist
         pickle.dump(result, open('./road_network_information' + '.pickle', 'wb'))
 
-
     def get_information_for_nodes(self, node_id_array):
         lng_array = self.df_road_network.loc[node_id_array, 'lng'].values
         lat_array = self.df_road_network.loc[node_id_array, 'lat'].values
@@ -242,7 +242,7 @@ def get_exponential_epsilons(initial_epsilon, final_epsilon, steps, decay=0.99, 
 
 
 def sample_all_drivers(driver_info, t_initial, t_end, driver_sample_ratio=1, driver_number_dist=''):
-    #当前并无随机抽样司机；后期若需要，可设置抽样模块生成sampled_driver_info
+    # 当前并无随机抽样司机；后期若需要，可设置抽样模块生成sampled_driver_info
     new_driver_info = deepcopy(driver_info)
     sampled_driver_info = new_driver_info
     sampled_driver_info['status'] = 3
@@ -271,7 +271,7 @@ def sample_request_num(t_mean, std, delta_t):
     :param delta_t:
     :return:
     """
-    random_num = np.random.normal(t_mean, std, 1)[0] * (delta_t/100)
+    random_num = np.random.normal(t_mean, std, 1)[0] * (delta_t / 100)
     random_int = random_num // 1
     random_reminder = random_num % 1
 
@@ -282,34 +282,49 @@ def sample_request_num(t_mean, std, delta_t):
         request_num = random_int
     return int(request_num)
 
+
 # reposition，暂时先不定义
 def reposition(eligible_driver_table, df_zone_info, adj_mat, mode):
-    #需用到route_generation_array
+    # 需用到route_generation_array
     itinerary_node_list = []
     itinerary_segment_dis_list = []
     dis_array = np.array([])
     # toy example
-    random_number = np.random.randint(0, side*side-1)
-    for _ in len(eligible_driver_table):
-
+    random_number = np.random.randint(0, side * side - 1)
+    dest_array = []
+    for _ in range(len(eligible_driver_table)):
+        record = result[result['grid_id'] == random_number]
+        if len(record) > 0:
+            dest_array.append([record.iloc[0]['lng'], record.iloc[0]['lat']])
+        else:
+            dest_array.append([result.iloc[0]['lng'], result.iloc[0]['lat']])
     coord_array = eligible_driver_table.loc[:, ['lng', 'lat']].values
-    itinerary_node_list, itinerary_segment_dis_list, dis_array = route_generation_array(coord_array, coord_array)
+    itinerary_node_list, itinerary_segment_dis_list, dis_array = route_generation_array(coord_array, dest_array)
     return itinerary_node_list, itinerary_segment_dis_list, dis_array
+
 
 # cruising，暂时先不定义
 def cruising(eligible_driver_table, df_zone_info, adj_mat, mode):
-    #需用到route_generation_array
+    # 需用到route_generation_array
     itinerary_node_list = []
     itinerary_segment_dis_list = []
     dis_array = np.array([])
 
     # toy example
+    random_number = np.random.randint(0, side * side - 1)
+    dest_array = []
+    for _ in range(len(eligible_driver_table)):
+        record = result[result['grid_id'] == random_number]
+        if len(record) > 0:
+            dest_array.append([record.iloc[0]['lng'], record.iloc[0]['lat']])
+        else:
+            dest_array.append([result.iloc[0]['lng'], result.iloc[0]['lat']])
     coord_array = eligible_driver_table.loc[:, ['lng', 'lat']].values
-    itinerary_node_list, itinerary_segment_dis_list, dis_array = route_generation_array(coord_array, coord_array)
+    itinerary_node_list, itinerary_segment_dis_list, dis_array = route_generation_array(coord_array, dest_array)
     return itinerary_node_list, itinerary_segment_dis_list, dis_array
 
 
-def order_dispatch(wait_requests, driver_table, maximal_pickup_distance = 950, dispatch_method = 'LD'):
+def order_dispatch(wait_requests, driver_table, maximal_pickup_distance=950, dispatch_method='LD'):
     con_ready_to_dispatch = (driver_table['status'] == 0) | (driver_table['status'] == 4)
     idle_driver_table = driver_table[con_ready_to_dispatch]
     num_wait_request = wait_requests.shape[0]
@@ -319,15 +334,18 @@ def order_dispatch(wait_requests, driver_table, maximal_pickup_distance = 950, d
 
     if num_wait_request > 0 and num_idle_driver > 0:
         if dispatch_method == 'LD':
-            #generate order driver pairs and corresponding itinerary
+            # generate order driver pairs and corresponding itinerary
             request_array = wait_requests.loc[:, ['origin_lng', 'origin_lat', 'order_id', 'weight']].values
             request_array = np.repeat(request_array, num_idle_driver, axis=0)
             driver_loc_array = idle_driver_table.loc[:, ['lng', 'lat', 'driver_id']].values
             driver_loc_array = np.tile(driver_loc_array, (num_wait_request, 1))
-            itinerary_node_list, itinerary_segment_dis_list, dis_array = route_generation_array(request_array[:, :2], driver_loc_array[:, :2], mode='drop_end')
+            itinerary_node_list, itinerary_segment_dis_list, dis_array = route_generation_array(request_array[:, :2],
+                                                                                                driver_loc_array[:, :2],
+                                                                                                mode='drop_end')
             flag = np.where(dis_array <= maximal_pickup_distance)[0]
             if len(flag) > 0:
-                order_driver_pair = np.vstack([request_array[flag, 2], driver_loc_array[flag, 2], request_array[flag, 3], flag]).T
+                order_driver_pair = np.vstack(
+                    [request_array[flag, 2], driver_loc_array[flag, 2], request_array[flag, 3], flag]).T
                 order_driver_pair = order_driver_pair.tolist()
                 matched_pair_actual_indexs = LD(order_driver_pair)
 
@@ -343,8 +361,9 @@ def order_dispatch(wait_requests, driver_table, maximal_pickup_distance = 950, d
 
     return matched_pair_actual_indexs, matched_itinerary
 
+
 def driver_online_offline_decision(driver_table, current_time):
-    #注意pickup和delivery driver不应当下线
+    # 注意pickup和delivery driver不应当下线
     new_driver_table = driver_table
     return new_driver_table
 
@@ -370,8 +389,6 @@ def get_nodeId_from_coordinate(lat, lng):
         x = ox.distance.get_nearest_node(G, (lat[i], lng[i]), method=None, return_dist=False)
         node_list.append(x)
     return node_list
-
-
 
 #############################################################################
 
