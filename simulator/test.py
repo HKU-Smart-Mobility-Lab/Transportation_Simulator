@@ -8,7 +8,7 @@ import pickle
 # records = pickle.load(open('road_network_information' + '.pickle', 'rb'))
 # adj_mat = pickle.load(open(data_path + 'adj_matrix.pickle', 'rb'))
 # request = pickle.load(open(data_path + 'toy_driver_info.pickle', 'rb'))
-request = pickle.load(open(data_path + 'toy_records.pickle', 'rb'))
+request = pickle.load(open(data_path + 'requests_test.pickle', 'rb'))
 
 # request = request[:10]
 # requests = {}

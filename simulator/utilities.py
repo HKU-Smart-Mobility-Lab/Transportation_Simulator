@@ -54,6 +54,7 @@ def distance_array(coord_1, coord_2):
 
 # 在这里加入ra
 def route_generation_array(origin_coord_array, dest_coord_array, mode = 'complete'):
+    print("route generation start")
     # origin_coord_list为 Kx2 的array，第一列为lng，第二列为lat；dest_coord_array同理
     # itinerary_node_list的每一项为一个list，包含了对应路线中的各个节点编号
     # itinerary_segment_dis_list的每一项为一个array，包含了对应路线中的各节点到相邻下一节点的距离
@@ -63,7 +64,7 @@ def route_generation_array(origin_coord_array, dest_coord_array, mode = 'complet
     itinerary_node_list = []
     itinerary_segment_dis_list = []
     dis_array = []
-    G = ox.graph_from_bbox(42 + 0.1,39 - 0.1, 69 - 0.1, 72 + 0.1, network_type='drive_service')
+    G = ox.graph_from_bbox(env_params['north_lat'] + 0.01, env_params['south_lat'] - 0.01, env_params['east_lng'] - 0.01, env_params + 0.01, network_type='drive')
     if mode == 'complete':
         #返回完整itinerary
         itenerary_list = ox.distance.shortest_path(G, origin_node_list, dest_node_list, weight='length', cpus=16)
@@ -302,8 +303,8 @@ def get_nodeId_from_coordinate(lat, lng):
     node_list = []
     for i in range(len(lat)):
         print("lat: ", lat[i], " lng: ", lng[i])
-        G = ox.graph_from_bbox(lat[i] + 40 + 0.1, lat[i] + 40 - 0.1, lng[i] + 70 - 0.1, lng[i] + 70  + 0.1, network_type='drive_service')
-        x = ox.distance.get_nearest_node(G, (lat[i] + 40, lng[i] + 70), method=None, return_dist=True)
+        G = ox.graph_from_bbox(lat[i] + 0.01, lat[i] - 0.01, lng[i] - 0.01, lng[i]  + 0.01, network_type='drive')
+        x = ox.distance.get_nearest_node(G, (lat[i], lng[i]), method=None, return_dist=True)
         node_list.append(x)
     return node_list
 #############################################################################

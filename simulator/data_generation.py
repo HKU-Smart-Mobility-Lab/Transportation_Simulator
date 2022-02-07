@@ -34,12 +34,12 @@ df_driver_info = pd.DataFrame(columns = ['driver_id', 'start_time', 'end_time', 
 df_driver_info['driver_id'] = [str(i) for i in range(10)]
 df_driver_info['start_time'] = 0
 df_driver_info['end_time'] = 101
-df_driver_info['lng'] = 0
-df_driver_info['lat'] = 0
+df_driver_info['lng'] = -73.992783
+df_driver_info['lat'] = 40.74853
 df_driver_info['grid_id'] = 0
 df_driver_info['status'] = 0
-df_driver_info['target_loc_lng'] = 0
-df_driver_info['target_loc_lat'] = 0
+df_driver_info['target_loc_lng'] = -73.982048
+df_driver_info['target_loc_lat'] = 40.758007
 df_driver_info['target_grid_id'] = 0
 df_driver_info['remaining_time'] = 0
 df_driver_info['matched_order_id'] = 'None'

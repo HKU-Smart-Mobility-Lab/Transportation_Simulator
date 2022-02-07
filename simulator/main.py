@@ -17,7 +17,7 @@ if __name__ == "__main__":
     for num in range(test_num):
         simulator.reset()
         for step in range(simulator.finish_run_step):
-            print(step)
+            print("step: ",step)
             new_tracks = simulator.step()
             track_record.append(new_tracks)
     pickle.dump(track_record, open(data_path + 'toy_records' + '.pickle', 'wb'))

@@ -125,7 +125,7 @@ class Simulator:
             matched_itinerary_df['pickup_distance'] = matched_itinerary[2]
         matched_order_id_list = matched_pair_index_df['order_id'].values.tolist()
         con_matched = self.wait_requests['order_id'].isin(matched_order_id_list)
-        con_keep_wait = self.wait_requests['wait_time'] <= self.wait_requests['maximum_wait_time']
+        con_keep_wait = self.wait_requests['wait_time'] = self.wait_requests['maximum_wait_time']
 
         # when the order is matched
         df_matched = self.wait_requests[con_matched].reset_index(drop=True)
@@ -218,7 +218,7 @@ class Simulator:
            count_interval = int(math.floor(self.time / self.request_interval))
            print("test",str(count_interval * self.request_interval))
 
-           self.request_database = self.request_databases[str(count_interval * self.request_interval)]
+           self.request_database = self.request_databases[count_interval * self.request_interval]
            database_size = len(self.request_database)
 
 
@@ -236,11 +236,15 @@ class Simulator:
 
            #generate complete information for new orders
            np.warnings.filterwarnings('ignore', category=np.VisibleDeprecationWarning)
-           column_name = ['order_id', 'origin_lng', 'origin_lat', 'dest_lng', 'dest_lat', 'immediate_reward',
-                          'trip_distance', 'trip_time', 'designed_reward', 'dest_grid_id', 'cancel_prob',
-                          'itinerary_node_list', 'itinerary_segment_dis_list']
-
+            # column_name = ['order_id', 'origin_lng', 'origin_lat', 'dest_lng', 'dest_lat', 'immediate_reward',
+            #               'trip_distance', 'trip_time', 'designed_reward', 'dest_grid_id', 'cancel_prob',
+            #               'itinerary_node_list', 'itinerary_segment_dis_list']
+           column_name = ['ID', 'trip_distance', 'origin_lng', 'origin_lat',
+       'dest_lng', 'dest_lat', 'trip_time', 'origin_id', 'dest_id',
+       'origin_grid_id', 'dest_grid_id', 'itinerary_segment_dis_list',
+       'itinerary_node_list', 'designed_reward', 'cancel_prob']
            if len(sampled_requests) > 0:
+               print(sampled_requests)
                wait_info = pd.DataFrame(sampled_requests, columns=column_name)
                wait_info['dest_grid_id'] = wait_info['dest_grid_id'].values.astype(int)
                wait_info['t_start'] = self.time
@@ -398,7 +402,7 @@ class Simulator:
         # for delivery finished
         self.driver_table.loc[loc_finished & loc_delivery, 'matched_order_id'] = 'None'
 
-        #for pickup
+        #for pickup    delivery是载客  pickup是接客
         #分两种情况，一种是下一时刻pickup 和 delivery都完成，另一种是下一时刻pickup 完成，delivery没完成
         #当前版本delivery直接跳转，因此不需要做更新其中间路线的处理。车辆在pickup完成后，delivery完成前都实际处在pickup location。完成任务后直接跳转到destination
         #如果需要考虑delivery的中间路线，可以把pickup和delivery状态进行融合
