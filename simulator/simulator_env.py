@@ -12,16 +12,6 @@ from utilities import *
 
 class Simulator:
     def __init__(self, **kwargs):
-        # generate_openstreetmap
-        self.G = ox.graph_from_bbox(env_params['north_lat'], env_params['south_lat'], env_params['east_lng']
-                               , env_params['west_lng'], network_type='drive_service')
-        gdf_nodes, gdf_edges = ox.graph_to_gdfs(self.G)
-        lat_list = gdf_nodes['y'].tolist()
-        lng_list = gdf_nodes['x'].tolist()
-        node_id = gdf_nodes.index.tolist()
-        self.node_id_to_lat_lng = {}
-        for i in range(len(lat_list)):
-            self.node_id_to_lat_lng[node_id[i]] = [lat_list[i], lng_list[i]]
 
         # basic parameters: time & sample
         self.t_initial = kwargs['t_initial']
@@ -209,6 +199,9 @@ class Simulator:
                     delivery_time = len(new_matched_requests['itinerary_node_list'][i])
                     pickup_time = len(time_array) - delivery_time
                     task_type_array = np.concatenate([2 + np.zeros(pickup_time), 1 + np.zeros(delivery_time)])
+                    node_list = []
+                    for i in range(len(lng_array)):
+                        node_list.append()
                     self.new_tracks[driver_id] = np.vstack([lng_array, lat_array, task_type_array, time_array]).T.tolist()
 
         # when the order is not matched

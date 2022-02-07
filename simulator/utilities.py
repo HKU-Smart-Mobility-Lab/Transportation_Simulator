@@ -165,7 +165,7 @@ def route_generation_array(origin_coord_array, dest_coord_array, mode='complete'
                 itinerary_segment_dis.append(dis)
             dis_array.append(sum(itinerary_segment_dis))
             itinerary_segment_dis_list.append(itinerary_segment_dis)
-
+    dis_array = np.array(dis_array)
     return itinerary_node_list, itinerary_segment_dis_list, dis_array
 
 
