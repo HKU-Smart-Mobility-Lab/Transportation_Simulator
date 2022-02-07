@@ -1,3 +1,4 @@
+from re import I
 import numpy as np
 from copy import deepcopy
 import random
@@ -19,7 +20,7 @@ lng_list = gdf_nodes['x'].tolist()
 node_id = gdf_nodes.index.tolist()
 node_id_to_lat_lng = {}
 for i in range(len(lat_list)):
-    node_id_to_lat_lng[node_id[i]] = [lat_list[i], lng_list[i]]
+    node_id_to_lat_lng[node_id[i]] = (lat_list[i], lng_list[i])
 
 def distance(coord_1, coord_2):
     lon1, lat1 = coord_1
@@ -76,10 +77,18 @@ def route_generation_array(origin_coord_array, dest_coord_array, mode = 'complet
     itinerary_node_list = []
     itinerary_segment_dis_list = []
     dis_array = []
-    G = ox.graph_from_bbox(env_params['north_lat'] + 0.01, env_params['south_lat'] - 0.01, env_params['east_lng'] - 0.01, env_params['west_lng'] + 0.01, network_type='drive')
     if mode == 'complete':
         #返回完整itinerary
-        itinerary_node = ox.distance.shortest_path(G, origin_node_list, dest_node_list, weight='length', cpus=16)
+        itinerary_node_list = ox.distance.shortest_path(G, origin_node_list, dest_node_list, weight='length', cpus=16)
+        for itinerary_node in itinerary_node_list:
+            itinerary_segment_dis = []
+            for i in tqdm(range(len(itinerary_node) - 1)):
+                # dis = nx.shortest_path_length(G, node_id_to_lat_lng[itinerary_node[i]], node_id_to_lat_lng[itinerary_node[i + 1]], weight='length')
+                dis = distance(node_id_to_lat_lng[itinerary_node[i]],node_id_to_lat_lng[itinerary_node[i + 1]])
+                itinerary_segment_dis.append(dis)
+            dis_array.append(sum(itinerary_segment_dis))
+            itinerary_segment_dis_list.append(itinerary_segment_dis)
+
         # a toy example
         # for i in range(origin_coord_array.shape[0]):
         #     origin_lng = origin_coord_array[i, 0]
@@ -113,8 +122,16 @@ def route_generation_array(origin_coord_array, dest_coord_array, mode = 'complet
             # itinerary_segment_dis_list.append(itinerary_segment_dis)
             # dis_array.append(dis)
         # dis_array = np.array(dis_array)
-        itenerary_node = ox.distance.shortest_path(G, origin_node_list, dest_node_list, weight='length', cpus=16)
-        
+       itinerary_node_list = ox.distance.shortest_path(G, origin_node_list, dest_node_list, weight='length', cpus=16)
+       for itinerary_node in itinerary_node_list:
+            itinerary_segment_dis = []
+            for i in tqdm(range(len(itinerary_node) - 1)):
+                # dis = nx.shortest_path_length(G, node_id_to_lat_lng[itinerary_node[i]], node_id_to_lat_lng[itinerary_node[i + 1]], weight='length')
+                dis = distance(node_id_to_lat_lng[itinerary_node[i]],node_id_to_lat_lng[itinerary_node[i + 1]])
+                itinerary_segment_dis.append(dis)
+            dis_array.append(sum(itinerary_segment_dis))
+            itinerary_segment_dis_list.append(itinerary_segment_dis)
+
        
     return itinerary_node_list, itinerary_segment_dis_list, dis_array
 
@@ -312,7 +329,6 @@ def get_zone(lat, lng, center, side, interval):
 def get_nodeId_from_coordinate(lat, lng):
     node_list = []
     for i in tqdm(range(len(lat))):
-        G = ox.graph_from_bbox(lat[i] + 0.01, lat[i] - 0.01, lng[i] - 0.01, lng[i]  + 0.01, network_type='drive')
         x = ox.distance.get_nearest_node(G, (lat[i], lng[i]), method=None, return_dist=False)
         node_list.append(x)
     return node_list
