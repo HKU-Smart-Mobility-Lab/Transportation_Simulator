@@ -25,8 +25,7 @@ for i in range(len(lat_list)):
 
 
 # define the function to get zone_id of segment node
-def get_zone(lat, lng):
-    print("lat , lng ", lat, lng)
+def get_zone(lat, lng, center, side, interval):
     if lat < center[1]:
         i = math.floor(side / 2) - math.ceil((center[1] - lat) / interval) + side % 2
     else:
@@ -36,12 +35,10 @@ def get_zone(lat, lng):
         j = math.floor(side / 2) - math.ceil((center[0] - lng) / interval) + side % 2
     else:
         j = math.floor(side / 2) + math.ceil((lng - center[0]) / interval) - 1
-    print(i, j)
     return i * side + j
 
 
 center = ((env_params['east_lng'] + env_params['west_lng']) / 2,(env_params['north_lat'] + env_params['south_lat']) /2)
-print("center: ",center)
 radius = max(abs(env_params['east_lng'] - env_params['west_lng']) / 2, abs(env_params['north_lat'] - env_params['south_lat']) / 2)
 side = 4
 interval = 2 * radius / side
@@ -51,7 +48,7 @@ result['lat'] = lat_list
 result['lng'] = lng_list
 result['node_id'] = gdf_nodes.index.tolist()
 for i in tqdm(range(len(result))):
-  nodelist.append(get_zone(lat_list[i], lng_list[i], center, side, interval))
+    nodelist.append(get_zone(lat_list[i], lng_list[i], center, side, interval))
 result['grid_id'] = nodelist
 
 
@@ -289,10 +286,15 @@ def reposition(eligible_driver_table, df_zone_info, adj_mat, mode):
     dis_array = np.array([])
     # toy example
     random_number = np.random.randint(0, side*side-1)
-    for _ in len(eligible_driver_table):
-
+    dest_array = []
+    for _ in range(len(eligible_driver_table)):
+        record = result[result['grid_id'] == random_number]
+        if len(record) > 0:
+            dest_array.append([record.iloc[0]['lng'], record.iloc[0]['lat']])
+        else:
+            dest_array.append([result.iloc[0]['lng'], result.iloc[0]['lat']])
     coord_array = eligible_driver_table.loc[:, ['lng', 'lat']].values
-    itinerary_node_list, itinerary_segment_dis_list, dis_array = route_generation_array(coord_array, coord_array)
+    itinerary_node_list, itinerary_segment_dis_list, dis_array = route_generation_array(coord_array, dest_array)
     return itinerary_node_list, itinerary_segment_dis_list, dis_array
 
 # cruising，暂时先不定义
@@ -303,8 +305,16 @@ def cruising(eligible_driver_table, df_zone_info, adj_mat, mode):
     dis_array = np.array([])
 
     # toy example
+    random_number = np.random.randint(0, side * side - 1)
+    dest_array = []
+    for _ in range(len(eligible_driver_table)):
+        record = result[result['grid_id'] == random_number]
+        if len(record) > 0:
+            dest_array.append([record.iloc[0]['lng'], record.iloc[0]['lat']])
+        else:
+            dest_array.append([result.iloc[0]['lng'], result.iloc[0]['lat']])
     coord_array = eligible_driver_table.loc[:, ['lng', 'lat']].values
-    itinerary_node_list, itinerary_segment_dis_list, dis_array = route_generation_array(coord_array, coord_array)
+    itinerary_node_list, itinerary_segment_dis_list, dis_array = route_generation_array(coord_array, dest_array)
     return itinerary_node_list, itinerary_segment_dis_list, dis_array
 
 
