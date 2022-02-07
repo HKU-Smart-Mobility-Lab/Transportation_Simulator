@@ -25,17 +25,18 @@ for i in range(len(lat_list)):
 
 
 # define the function to get zone_id of segment node
-def get_zone(lat, lng, center, side, interval):
+def get_zone(lat, lng):
+    print("lat , lng ", lat, lng)
     if lat < center[1]:
-        i = math.floor(side / 2) - math.ceil((center[1] - lat) / interval)
+        i = math.floor(side / 2) - math.ceil((center[1] - lat) / interval) + side % 2
     else:
-        i = math.floor(side / 2) + math.ceil((lat - center[1]) / interval) - (1 - side % 2)
+        i = math.floor(side / 2) + math.ceil((lat - center[1]) / interval) - 1
 
     if lng < center[0]:
-        j = math.floor(side / 2) - math.ceil((center[0] - lng) / interval)
+        j = math.floor(side / 2) - math.ceil((center[0] - lng) / interval) + side % 2
     else:
-        j = math.floor(side / 2) + math.ceil((lng - center[0]) / interval) - (1 - side % 2)
-
+        j = math.floor(side / 2) + math.ceil((lng - center[0]) / interval) - 1
+    print(i, j)
     return i * side + j
 
 
@@ -286,10 +287,10 @@ def reposition(eligible_driver_table, df_zone_info, adj_mat, mode):
     itinerary_node_list = []
     itinerary_segment_dis_list = []
     dis_array = np.array([])
-    print(eligible_driver_table)
     # toy example
     random_number = np.random.randint(0, side*side-1)
-    
+    for _ in len(eligible_driver_table):
+
     coord_array = eligible_driver_table.loc[:, ['lng', 'lat']].values
     itinerary_node_list, itinerary_segment_dis_list, dis_array = route_generation_array(coord_array, coord_array)
     return itinerary_node_list, itinerary_segment_dis_list, dis_array
