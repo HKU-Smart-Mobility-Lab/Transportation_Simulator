@@ -8,6 +8,18 @@ from path import *
 import time
 import pickle
 import osmnx as ox
+from tqdm import tqdm
+import networkx as nx
+
+G = ox.graph_from_bbox(env_params['north_lat'], env_params['south_lat'], env_params['east_lng']
+                        , env_params['west_lng'], network_type='drive_service')
+gdf_nodes, gdf_edges = ox.graph_to_gdfs(G)
+lat_list = gdf_nodes['y'].tolist()
+lng_list = gdf_nodes['x'].tolist()
+node_id = gdf_nodes.index.tolist()
+node_id_to_lat_lng = {}
+for i in range(len(lat_list)):
+    node_id_to_lat_lng[node_id[i]] = [lat_list[i], lng_list[i]]
 
 def distance(coord_1, coord_2):
     lon1, lat1 = coord_1
@@ -64,12 +76,10 @@ def route_generation_array(origin_coord_array, dest_coord_array, mode = 'complet
     itinerary_node_list = []
     itinerary_segment_dis_list = []
     dis_array = []
-    G = ox.graph_from_bbox(env_params['north_lat'] + 0.01, env_params['south_lat'] - 0.01, env_params['east_lng'] - 0.01, env_params + 0.01, network_type='drive')
+    G = ox.graph_from_bbox(env_params['north_lat'] + 0.01, env_params['south_lat'] - 0.01, env_params['east_lng'] - 0.01, env_params['west_lng'] + 0.01, network_type='drive')
     if mode == 'complete':
         #返回完整itinerary
-        itenerary_list = ox.distance.shortest_path(G, origin_node_list, dest_node_list, weight='length', cpus=16)
-        dis_array = [2] * len(itenerary_list)
-        itinerary_segment_dis_list = [2] * len(itenerary_list)
+        itinerary_node = ox.distance.shortest_path(G, origin_node_list, dest_node_list, weight='length', cpus=16)
         # a toy example
         # for i in range(origin_coord_array.shape[0]):
         #     origin_lng = origin_coord_array[i, 0]
@@ -103,9 +113,9 @@ def route_generation_array(origin_coord_array, dest_coord_array, mode = 'complet
             # itinerary_segment_dis_list.append(itinerary_segment_dis)
             # dis_array.append(dis)
         # dis_array = np.array(dis_array)
-        itenerary_list = ox.distance.shortest_path(G, origin_node_list, dest_node_list, weight='length', cpus=16)
-        dis_array = [2] * len(itenerary_list)
-        itinerary_segment_dis_list = [2] * len(itenerary_list)
+        itenerary_node = ox.distance.shortest_path(G, origin_node_list, dest_node_list, weight='length', cpus=16)
+        
+       
     return itinerary_node_list, itinerary_segment_dis_list, dis_array
 
 class GridSystem:
@@ -301,12 +311,14 @@ def get_zone(lat, lng, center, side, interval):
 
 def get_nodeId_from_coordinate(lat, lng):
     node_list = []
-    for i in range(len(lat)):
-        print("lat: ", lat[i], " lng: ", lng[i])
+    for i in tqdm(range(len(lat))):
         G = ox.graph_from_bbox(lat[i] + 0.01, lat[i] - 0.01, lng[i] - 0.01, lng[i]  + 0.01, network_type='drive')
-        x = ox.distance.get_nearest_node(G, (lat[i], lng[i]), method=None, return_dist=True)
+        x = ox.distance.get_nearest_node(G, (lat[i], lng[i]), method=None, return_dist=False)
         node_list.append(x)
     return node_list
+
+
+
 #############################################################################
 
 
