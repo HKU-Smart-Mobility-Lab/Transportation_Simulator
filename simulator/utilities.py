@@ -3,14 +3,12 @@ import numpy as np
 from copy import deepcopy
 import random
 from dispatch_alg import LD
-from math import radians, degrees, cos, sin, asin, sqrt, atan2
+from math import radians, sin, atan2
 from config import *
 import math
-import time
 import pickle
 import osmnx as ox
 from tqdm import tqdm
-import networkx as nx
 import pandas as pd
 
 G = ox.graph_from_bbox(env_params['north_lat'], env_params['south_lat'], env_params['east_lng']
@@ -23,9 +21,16 @@ node_id_to_lat_lng = {}
 for i in range(len(lat_list)):
     node_id_to_lat_lng[node_id[i]] = (lat_list[i], lng_list[i])
 
+center = (
+(env_params['east_lng'] + env_params['west_lng']) / 2, (env_params['north_lat'] + env_params['south_lat']) / 2)
+radius = max(abs(env_params['east_lng'] - env_params['west_lng']) / 2,
+             abs(env_params['north_lat'] - env_params['south_lat']) / 2)
+side = 4
+interval = 2 * radius / side
+
 
 # define the function to get zone_id of segment node
-def get_zone(lat, lng, center, side, interval):
+def get_zone(lat, lng):
     if lat < center[1]:
         i = math.floor(side / 2) - math.ceil((center[1] - lat) / interval) + side % 2
     else:
@@ -38,19 +43,13 @@ def get_zone(lat, lng, center, side, interval):
     return i * side + j
 
 
-center = (
-(env_params['east_lng'] + env_params['west_lng']) / 2, (env_params['north_lat'] + env_params['south_lat']) / 2)
-radius = max(abs(env_params['east_lng'] - env_params['west_lng']) / 2,
-             abs(env_params['north_lat'] - env_params['south_lat']) / 2)
-side = 4
-interval = 2 * radius / side
 result = pd.DataFrame()
 nodelist = []
 result['lat'] = lat_list
 result['lng'] = lng_list
 result['node_id'] = gdf_nodes.index.tolist()
 for i in tqdm(range(len(result))):
-    nodelist.append(get_zone(lat_list[i], lng_list[i], center, side, interval))
+    nodelist.append(get_zone(lat_list[i], lng_list[i]))
 result['grid_id'] = nodelist
 
 

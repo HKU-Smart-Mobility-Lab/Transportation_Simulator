@@ -13,6 +13,7 @@ import pandas as pd
 from tqdm import tqdm
 import osmnx as ox
 import pickle
+from utilities import G
 
 
 def csv_to_pickle(input_file, output_file):
@@ -31,6 +32,7 @@ def csv_to_pickle(input_file, output_file):
     dest_list = []
     dest_openstreetmap_lng = []
     dest_openstreetmap_lat = []
+    pickup_time_new = []
     for i in tqdm(range(data_num)):
         try:
             ori_id, temp_ori_lat, temp_ori_lng = find_closest_point(ori_lat[i], ori_lng[i])
@@ -41,51 +43,24 @@ def csv_to_pickle(input_file, output_file):
             dest_list.append(dest_id)
             dest_openstreetmap_lng.append(temp_dest_lng)
             dest_openstreetmap_lat.append(temp_dest_lat)
+            pickup_time_new.append(pickup_time[i])
         except:
             print('wrong!')
     data_num = len(origin_lng)
-    lng_max = max(data['origin_lng'].max(), data['dest_lng'].max())
-    lng_min = min(data['origin_lng'].min(), data['dest_lng'].min())
-    lat_max = max(data['origin_lat'].max(), data['dest_lat'].max())
-    lat_min = min(data['origin_lat'].min(), data['dest_lat'].min())
-
-    center = ((lng_max + lng_min) / 2, (lat_max + lat_min) / 2)
-    print("center: ", center)
-    radius = max((lng_max - lng_min) / 2, (lat_max - lat_min) / 2)
-    side = 2
-    interval = 2 * radius / side
-    print("interval", interval)
-    # G = ox.graph_from_bbox(center[1] + radius, center[1] - radius, center[0] - radius, center[0] + radius,
-    #                        network_type='drive_service')
-    # gdf_nodes, gdf_edges = ox.graph_to_gdfs(G)
-    # lat_list = gdf_nodes['y'].tolist()
-    # lng_list = gdf_nodes['x'].tolist()
-    # node_id = gdf_nodes.index.tolist()
-    # node_id_to_grid_id = {}
     ori_grid_id = []
     dest_grid_id = []
     for i in range(data_num):
         try:
-            ori_grid_id.append(get_zone(origin_lat[i], origin_lng[i], center, side, interval))
-            dest_grid_id.append(get_zone(dest_openstreetmap_lat[i], dest_openstreetmap_lng[i], center, side, interval))
+            ori_grid_id.append(get_zone(origin_lat[i], origin_lng[i]))
+            dest_grid_id.append(get_zone(dest_openstreetmap_lat[i], dest_openstreetmap_lng[i]))
         except:
             print(ori_list[i])
             print(dest_list[i])
     print('finish!')
-    # for i in tqdm(range(len(node_id))):
-    #     node_id_to_grid_id[node_id[i]] = get_zone(lat_list[i], lng_list[i], center, side, interval)
-    # for i in range(data_num):
-    #     try:
-    #         ori_grid_id.append(node_id_to_grid_id[ori_list[i]])
-    #         dest_grid_id.append(node_id_to_grid_id[dest_list[i]])
-    #     except:
-    #         print(ori_list[i])
-    #         print(dest_list[i])
     data['origin_id'] = ori_list
     data['dest_id'] = dest_list
     data['origin_grid'] = ori_grid_id
     data['dest_grid'] = dest_grid_id
-    G = ox.graph_from_bbox(lat_max + 0.1, lat_min - 0.1, lng_min - 0.1, lng_max + 0.1, network_type='drive_service')
     itenerary_list = ox.distance.shortest_path(G, ori_list, dest_list, weight='length', cpus=1)
     data['itinerary_segment_dis_list'] = itenerary_list
     data['itinerary_node_list'] = pd.Series([[] for _ in range(len(data))])
