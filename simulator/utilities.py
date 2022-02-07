@@ -5,12 +5,13 @@ import random
 from dispatch_alg import LD
 from math import radians,degrees, cos, sin, asin, sqrt, atan2
 from config import *
-from path import *
+import math
 import time
 import pickle
 import osmnx as ox
 from tqdm import tqdm
 import networkx as nx
+import pandas as pd
 
 G = ox.graph_from_bbox(env_params['north_lat'], env_params['south_lat'], env_params['east_lng']
                         , env_params['west_lng'], network_type='drive_service')
@@ -21,6 +22,37 @@ node_id = gdf_nodes.index.tolist()
 node_id_to_lat_lng = {}
 for i in range(len(lat_list)):
     node_id_to_lat_lng[node_id[i]] = (lat_list[i], lng_list[i])
+
+
+# define the function to get zone_id of segment node
+def get_zone(lat, lng, center, side, interval):
+    if lat < center[1]:
+        i = math.floor(side / 2) - math.ceil((center[1] - lat) / interval)
+    else:
+        i = math.floor(side / 2) + math.ceil((lat - center[1]) / interval) - (1 - side % 2)
+
+    if lng < center[0]:
+        j = math.floor(side / 2) - math.ceil((center[0] - lng) / interval)
+    else:
+        j = math.floor(side / 2) + math.ceil((lng - center[0]) / interval) - (1 - side % 2)
+
+    return i * side + j
+
+
+center = ((env_params['east_lng'] + env_params['west_lng']) / 2,(env_params['north_lat'] + env_params['south_lat']) /2)
+print("center: ",center)
+radius = max(abs(env_params['east_lng'] - env_params['west_lng']) / 2, abs(env_params['north_lat'] - env_params['south_lat']) / 2)
+side = 4
+interval = 2 * radius / side
+result = pd.DataFrame()
+nodelist = []
+result['lat'] = lat_list
+result['lng'] = lng_list
+result['node_id'] = gdf_nodes.index.tolist()
+for i in tqdm(range(len(result))):
+  nodelist.append(get_zone(lat_list[i], lng_list[i], center, side, interval))
+result['grid_id'] = nodelist
+
 
 def distance(coord_1, coord_2):
     lon1, lat1 = coord_1
@@ -140,6 +172,7 @@ class GridSystem:
         pass
 
     def load_data(self, data_path):
+        # self.df_zone_info = pickle.load(open(data_path + 'zone_info.pickle', 'rb'))
         self.df_zone_info = pickle.load(open(data_path + 'zone_info.pickle', 'rb'))
         self.num_grid = self.df_zone_info.shape[0]
         self.adj_mat = pickle.load(open(data_path + 'adj_matrix.pickle', 'rb'))
@@ -155,7 +188,8 @@ class road_network:
     def load_data(self, data_path, file_name):
         # 路网格式：节点数字编号（从0开始），节点经度，节点纬度，所在grid id
         # columns = ['node_id', 'lng', 'lat', 'grid_id']
-        self.df_road_network = pickle.load(open(data_path + file_name, 'rb'))
+        # self.df_road_network = pickle.load(open(data_path + file_name, 'rb'))
+        self.df_road_network = result
         self.df_road_network['grid_id'] = [0] * len(self.df_road_network)
 
     def generate_road_info(self):
@@ -254,6 +288,8 @@ def reposition(eligible_driver_table, df_zone_info, adj_mat, mode):
     dis_array = np.array([])
     print(eligible_driver_table)
     # toy example
+    random_number = np.random.randint(0, side*side-1)
+    
     coord_array = eligible_driver_table.loc[:, ['lng', 'lat']].values
     itinerary_node_list, itinerary_segment_dis_list, dis_array = route_generation_array(coord_array, coord_array)
     return itinerary_node_list, itinerary_segment_dis_list, dis_array
