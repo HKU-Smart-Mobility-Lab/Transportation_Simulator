@@ -13,12 +13,10 @@ import pandas as pd
 from tqdm import tqdm
 import osmnx as ox
 import pickle
-import json
-from copy import deepcopy
 
 
 def csv_to_pickle(input_file, output_file):
-    data_num = 10
+    data_num = 109
 
     data = pd.read_csv(input_file)
     data = data.head(data_num)
@@ -34,14 +32,18 @@ def csv_to_pickle(input_file, output_file):
     dest_openstreetmap_lng = []
     dest_openstreetmap_lat = []
     for i in tqdm(range(data_num)):
-        ori_id, temp_ori_lat, temp_ori_lng = find_closest_point(ori_lat[i], ori_lng[i])
-        dest_id, temp_dest_lat, temp_dest_lng = find_closest_point(dest_lat[i], dest_lng[i])
-        ori_list.append(ori_id)
-        origin_lng.append(temp_ori_lng)
-        origin_lat.append(temp_ori_lat)
-        dest_list.append(dest_id)
-        dest_openstreetmap_lng.append(temp_dest_lng)
-        dest_openstreetmap_lat.append(temp_dest_lat)
+        try:
+            ori_id, temp_ori_lat, temp_ori_lng = find_closest_point(ori_lat[i], ori_lng[i])
+            dest_id, temp_dest_lat, temp_dest_lng = find_closest_point(dest_lat[i], dest_lng[i])
+            ori_list.append(ori_id)
+            origin_lng.append(temp_ori_lng)
+            origin_lat.append(temp_ori_lat)
+            dest_list.append(dest_id)
+            dest_openstreetmap_lng.append(temp_dest_lng)
+            dest_openstreetmap_lat.append(temp_dest_lat)
+        except:
+            print('wrong!')
+    data_num = len(origin_lng)
     lng_max = max(data['origin_lng'].max(), data['dest_lng'].max())
     lng_min = min(data['origin_lng'].min(), data['dest_lng'].min())
     lat_max = max(data['origin_lat'].max(), data['dest_lat'].max())
