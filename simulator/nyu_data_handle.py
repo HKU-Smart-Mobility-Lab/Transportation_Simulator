@@ -20,6 +20,15 @@ def time_string_to_minutes(time):
     return minutes
 
 
+def t2s(t): #t format is hh:mm:ss
+    if t != '0':
+        h,m,s = t.split(" ")[-1].split(":")
+#         print(h , m, s)
+        return int(h) * 3600 + int(m) * 60 + int(s)
+    else:
+         return 0
+
+
 def transform_data_from_nyu_to_one_day(input_file, output_file, day):
     driver_columns = ['ID', 'trip_distance', 'origin_lng', 'origin_lat', 'dest_lng', 'dest_lat', 'trip_time']
     data = pd.read_csv(input_file)
@@ -28,6 +37,7 @@ def transform_data_from_nyu_to_one_day(input_file, output_file, day):
     for index, row in tqdm(data.iterrows()):
         origin_lat, origin_lng = find_closest_point(row[' pickup_latitude'], row[' pickup_longitude'])
         dest_lat, dest_lng = find_closest_point(row[' dropoff_latitude'], row[' dropoff_longitude'])
+        row[' pickup_datetime'] = row[' pickup_datetime'].apply(t2s)
         record = [index, row[' trip_distance'], origin_lng, origin_lat, dest_lng, dest_lat, row[' pickup_datetime']]
         output_data = output_data.append(record, ignore_index=True)
     output_data.to_csv(output_file)
@@ -40,10 +50,11 @@ def transform_data_from_nyu_to_one_month(input_file, output_file):
     for index, row in tqdm(data.iterrows()):
         time = row[' pickup_datetime']
         day = time.split(' ')[0].split('-')[2]
-        minutes = time_string_to_minutes(time)
+        # minutes = time_string_to_minutes(time)
         origin_lat, origin_lng = find_closest_point(row[' pickup_latitude'], row[' pickup_longitude'])
         dest_lat, dest_lng = find_closest_point(row[' dropoff_latitude'], row[' dropoff_longitude'])
-        record = [index, row[' trip_distance'], origin_lng, origin_lat, dest_lng, dest_lat, minutes, day]
+        row[' pickup_datetime'] = row[' pickup_datetime'].apply(t2s)
+        record = [index, row[' trip_distance'], origin_lng, origin_lat, dest_lng, dest_lat, row[' pickup_datetime'], day]
         output_data = output_data.append(record, ignore_index=True)
     output_data.to_csv(output_file)
 
