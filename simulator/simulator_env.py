@@ -12,6 +12,17 @@ from utilities import *
 
 class Simulator:
     def __init__(self, **kwargs):
+        # generate_openstreetmap
+        self.G = ox.graph_from_bbox(env_params['north_lat'], env_params['south_lat'], env_params['east_lng']
+                               , env_params['west_lng'], network_type='drive_service')
+        gdf_nodes, gdf_edges = ox.graph_to_gdfs(self.G)
+        lat_list = gdf_nodes['y'].tolist()
+        lng_list = gdf_nodes['x'].tolist()
+        node_id = gdf_nodes.index.tolist()
+        self.node_id_to_lat_lng = {}
+        for i in range(len(lat_list)):
+            self.node_id_to_lat_lng[node_id[i]] = [lat_list[i], lng_list[i]]
+
         # basic parameters: time & sample
         self.t_initial = kwargs['t_initial']
         self.t_end = kwargs['t_end']
@@ -125,7 +136,7 @@ class Simulator:
             matched_itinerary_df['pickup_distance'] = matched_itinerary[2]
         matched_order_id_list = matched_pair_index_df['order_id'].values.tolist()
         con_matched = self.wait_requests['order_id'].isin(matched_order_id_list)
-        con_keep_wait = self.wait_requests['wait_time'] = self.wait_requests['maximum_wait_time']
+        con_keep_wait = self.wait_requests['wait_time'] == self.wait_requests['maximum_wait_time']
 
         # when the order is matched
         df_matched = self.wait_requests[con_matched].reset_index(drop=True)
