@@ -10,7 +10,7 @@ import pickle
 import osmnx as ox
 from tqdm import tqdm
 import pandas as pd
-
+import sys
 G = ox.graph_from_bbox(env_params['north_lat'], env_params['south_lat'], env_params['east_lng']
                        , env_params['west_lng'], network_type='drive_service')
 gdf_nodes, gdf_edges = ox.graph_to_gdfs(G)
@@ -18,8 +18,10 @@ lat_list = gdf_nodes['y'].tolist()
 lng_list = gdf_nodes['x'].tolist()
 node_id = gdf_nodes.index.tolist()
 node_id_to_lat_lng = {}
+node_coord_to_id = {}
 for i in range(len(lat_list)):
     node_id_to_lat_lng[node_id[i]] = (lat_list[i], lng_list[i])
+    node_coord_to_id[(lat_list[i], lng_list[i])] = node_id[i]
 
 center = (
 (env_params['east_lng'] + env_params['west_lng']) / 2, (env_params['north_lat'] + env_params['south_lat']) / 2)
@@ -27,6 +29,9 @@ radius = max(abs(env_params['east_lng'] - env_params['west_lng']) / 2,
              abs(env_params['north_lat'] - env_params['south_lat']) / 2)
 side = 4
 interval = 2 * radius / side
+
+
+   
 
 
 # define the function to get zone_id of segment node
@@ -48,7 +53,7 @@ nodelist = []
 result['lat'] = lat_list
 result['lng'] = lng_list
 result['node_id'] = gdf_nodes.index.tolist()
-for i in tqdm(range(len(result))):
+for i in range(len(result)):
     nodelist.append(get_zone(lat_list[i], lng_list[i]))
 result['grid_id'] = nodelist
 
@@ -115,7 +120,7 @@ def route_generation_array(origin_coord_array, dest_coord_array, mode='complete'
         itinerary_node_list = ox.distance.shortest_path(G, origin_node_list, dest_node_list, weight='length', cpus=16)
         for itinerary_node in itinerary_node_list:
             itinerary_segment_dis = []
-            for i in tqdm(range(len(itinerary_node) - 1)):
+            for i in range(len(itinerary_node) - 1):
                 # dis = nx.shortest_path_length(G, node_id_to_lat_lng[itinerary_node[i]], node_id_to_lat_lng[itinerary_node[i + 1]], weight='length')
                 dis = distance(node_id_to_lat_lng[itinerary_node[i]], node_id_to_lat_lng[itinerary_node[i + 1]])
                 itinerary_segment_dis.append(dis)
@@ -158,7 +163,7 @@ def route_generation_array(origin_coord_array, dest_coord_array, mode='complete'
         itinerary_node_list = ox.distance.shortest_path(G, origin_node_list, dest_node_list, weight='length', cpus=16)
         for itinerary_node in itinerary_node_list:
             itinerary_segment_dis = []
-            for i in tqdm(range(len(itinerary_node) - 1)):
+            for i in range(len(itinerary_node) - 1):
                 # dis = nx.shortest_path_length(G, node_id_to_lat_lng[itinerary_node[i]], node_id_to_lat_lng[itinerary_node[i + 1]], weight='length')
                 dis = distance(node_id_to_lat_lng[itinerary_node[i]], node_id_to_lat_lng[itinerary_node[i + 1]])
                 itinerary_segment_dis.append(dis)
@@ -192,30 +197,29 @@ class road_network:
         # columns = ['node_id', 'lng', 'lat', 'grid_id']
         # self.df_road_network = pickle.load(open(data_path + file_name, 'rb'))
         self.df_road_network = result
-        self.df_road_network['grid_id'] = [0] * len(self.df_road_network)
 
-    def generate_road_info(self):
-        data = pd.read_csv(self.params['input_file_path'])
-        lng_max = max(data['origin_lng'].max(), data['dest_lng'].max())
-        lng_min = min(data['origin_lng'].min(), data['dest_lng'].min())
-        lat_max = max(data['origin_lat'].max(), data['dest_lat'].max())
-        lat_min = min(data['origin_lat'].min(), data['dest_lat'].min())
-        center = ((lng_max + lng_min) / 2, (lat_max + lat_min) / 2)
-        interval = max((lng_max - lng_min), (lat_max - lat_min)) / self.params['side']
-        G = ox.graph_from_bbox(lat_max + 0.1, lat_min - 0.1, lng_min - 0.1, lng_max + 0.1, network_type='drive_service')
-        gdf_nodes, gdf_edges = ox.graph_to_gdfs(G)
-        nodelist = []
-        lat_list = gdf_nodes['y'].tolist()
-        lng_list = gdf_nodes['x'].tolist()
-        result = pd.DataFrame()
-        result['lat'] = lat_list
-        result['lng'] = lng_list
-        result['node_id'] = gdf_nodes.index.tolist()
-        result['node_id'] = gdf_nodes.index.tolist()[:10]
-        for i in range(len(result)):
-            nodelist.append(get_zone(lat_list[i], lng_list[i], center, side, interval))
-        result['grid_id'] = nodelist
-        pickle.dump(result, open('./road_network_information' + '.pickle', 'wb'))
+    # def generate_road_info(self):
+        # data = pd.read_csv(self.params['input_file_path'])
+        # lng_max = max(data['origin_lng'].max(), data['dest_lng'].max())
+        # lng_min = min(data['origin_lng'].min(), data['dest_lng'].min())
+        # lat_max = max(data['origin_lat'].max(), data['dest_lat'].max())
+        # lat_min = min(data['origin_lat'].min(), data['dest_lat'].min())
+        # center = ((lng_max + lng_min) / 2, (lat_max + lat_min) / 2)
+        # interval = max((lng_max - lng_min), (lat_max - lat_min)) / self.params['side']
+        # G = ox.graph_from_bbox(lat_max + 0.1, lat_min - 0.1, lng_min - 0.1, lng_max + 0.1, network_type='drive_service')
+        # gdf_nodes, gdf_edges = ox.graph_to_gdfs(G)
+        # nodelist = []
+        # lat_list = gdf_nodes['y'].tolist()
+        # lng_list = gdf_nodes['x'].tolist()
+        # result = pd.DataFrame()
+        # result['lat'] = lat_list
+        # result['lng'] = lng_list
+        # result['node_id'] = gdf_nodes.index.tolist()
+        # result['node_id'] = gdf_nodes.index.tolist()[:10]
+        # for i in range(len(result)):
+        #     nodelist.append(get_zone(lat_list[i], lng_list[i], center, side, interval))
+        # result['grid_id'] = nodelist
+        # pickle.dump(result, open('./road_network_information' + '.pickle', 'wb'))
 
     def get_information_for_nodes(self, node_id_array):
         lng_array = self.df_road_network.loc[node_id_array, 'lng'].values
@@ -312,8 +316,13 @@ def cruising(eligible_driver_table, df_zone_info, adj_mat, mode):
     # toy example
     random_number = np.random.randint(0, side * side - 1)
     dest_array = []
+    print("eligible_driver_table",eligible_driver_table)
+    sys.pause()
     for _ in range(len(eligible_driver_table)):
-        record = result[result['grid_id'] == random_number]
+        if mode == 'random':
+            record = result[result['grid_id'] == random_number]
+        elif mode == 'nearby':
+            record = result[result['grid_id'] == random_number]
         if len(record) > 0:
             dest_array.append([record.iloc[0]['lng'], record.iloc[0]['lat']])
         else:
@@ -379,12 +388,12 @@ def get_zone(lat, lng, center, side, interval):
     else:
         j = math.floor(side / 2) + math.ceil((lng - center[0]) / interval) - (1 - side % 2)
 
-    return i * side + j
+    return int(i * side + j)
 
 
 def get_nodeId_from_coordinate(lat, lng):
     node_list = []
-    for i in tqdm(range(len(lat))):
+    for i in range(len(lat)):
         x = ox.distance.get_nearest_node(G, (lat[i], lng[i]), method=None, return_dist=False)
         node_list.append(x)
     return node_list

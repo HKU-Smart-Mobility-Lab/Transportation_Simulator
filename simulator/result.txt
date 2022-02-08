@@ -1,0 +1,21 @@
+step:  0
+start reposition and cruise
+start cruise
+step:  1
+route generation start
+start reposition and cruise
+start cruise
+step:  2
+route generation start
+start reposition and cruise
+start cruise
+step:  3
+route generation start
+start reposition and cruise
+start cruise
+step:  4
+route generation start
+start reposition and cruise
+start cruise
+step:  5
+route generation start

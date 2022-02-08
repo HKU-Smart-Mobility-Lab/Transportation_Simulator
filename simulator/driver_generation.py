@@ -6,24 +6,24 @@ from copy import deepcopy
 from path import *
 from utilities import *
 from find_closest_point import *
+import sys
+
 
 #Driver file
-df_driver_info = pd.DataFrame(columns = ['driver_id', 'start_time', 'end_time', 'lng', 'lat', 'grid_id', 'status',
+df_driver_info = pd.DataFrame(columns = ['driver_id', 'start_time', 'end_time', 'lng', 'lat','node_id' 'grid_id', 'status',
                                'target_loc_lng', 'target_loc_lat', 'target_grid_id', 'remaining_time',
                                'matched_order_id', 'total_idle_time', 'time_to_last_cruising', 'current_road_node_index',
                                'remaining_time_for_current_node', 'itinerary_node_list', 'itinerary_segment_dis_list'])
+sample_gdf_nodes = gdf_nodes.sample(n=env_params['driver_num'],replace = True)
+
 df_driver_info['driver_id'] = [str(i) for i in range(10)]
-df_driver_info['start_time'] = 0
-df_driver_info['end_time'] = 101
-lng = random.uniform(-88.420831,-70)
-lat = random.uniform(40,50.104393)
-print("before",lat,lng)
-center = (-73.9689405, 40.751611499999996)
-lat,lng = find_closest_point(lat,lng,mode="coord")
-df_driver_info['lng'] = lng
-df_driver_info['lat'] = lat
-print("after",lat,lng)
-df_driver_info['grid_id'] = get_zone(lat,lng,center= center, side = 4,interval=0.034363500000001324)
+df_driver_info['start_time'] = env_params['t_initial']
+df_driver_info['end_time'] = env_params['t_end']
+df_driver_info['lng'] = sample_gdf_nodes['x'].tolist()
+df_driver_info['lat'] = sample_gdf_nodes['y'].tolist()
+id_list = sample_gdf_nodes.index.tolist()
+df_driver_info['node_id'] = id_list
+df_driver_info['grid_id'] = [int(result[result['node_id'] == x].iloc[0]['grid_id']) for x in id_list]
 df_driver_info['status'] = 0
 df_driver_info['target_loc_lng'] = 0
 df_driver_info['target_loc_lat'] = 0
