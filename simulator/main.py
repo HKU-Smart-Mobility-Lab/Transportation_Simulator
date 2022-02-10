@@ -4,7 +4,9 @@ import numpy as np
 from config import *
 from path import *
 import time
-
+from tqdm import tqdm
+import warnings
+warnings.filterwarnings("ignore")
 # python D:\Feng\drl_subway_comp\main.py
 
 if __name__ == "__main__":

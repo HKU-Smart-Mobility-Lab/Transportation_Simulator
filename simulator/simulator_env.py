@@ -49,9 +49,9 @@ class Simulator:
         pattern = SimulatorPattern(**pattern_params)
 
         # grid system initialization
-        self.GS = GridSystem()
-        self.GS.load_data(data_path)
-        self.num_zone = self.GS.get_basics()
+        # self.GS = GridSystem()
+        # self.GS.load_data(data_path)
+        # self.num_zone = self.GS.get_basics()
 
         # road network
         road_network_file_name = kwargs['road_network_file_name']
@@ -269,13 +269,15 @@ class Simulator:
         # total_idle_time 为reposition间的间隔， time to last cruising 为cruising间的间隔。
         print("start reposition and cruise")
         if self.reposition_flag == True:
+            print("reposition")
             con_eligibe = (self.driver_table['total_idle_time'] > self.eligible_time_for_reposition) & \
                           (self.driver_table['status'] == 0)
             eligible_driver_table = self.driver_table[con_eligibe]
+            print("eligible_driver_table",eligible_driver_table)
             eligible_driver_index = np.array(eligible_driver_table.index)
             if len(eligible_driver_index) > 0:
                 itinerary_node_list, itinerary_segment_dis_list, dis_array = \
-                    reposition(eligible_driver_table, self.GS.df_zone_info, self.GS.adj_mat, self.reposition_mode)
+                    reposition(eligible_driver_table, self.reposition_mode)
                 self.driver_table.loc[eligible_driver_index, 'status'] = 4
                 self.driver_table.loc[eligible_driver_index, 'remaining_time'] = dis_array / self.vehicle_speed
                 self.driver_table.loc[eligible_driver_index, 'total_idle_time'] = 0
@@ -293,14 +295,14 @@ class Simulator:
 
 
         if self.cruise_flag == True:
-            print("start cruise")
+            
             con_eligibe = (self.driver_table['time_to_last_cruising'] > self.max_idle_time) & \
                           (self.driver_table['status'] == 0)
             eligible_driver_table = self.driver_table[con_eligibe]
             eligible_driver_index = list(eligible_driver_table.index)
             if len(eligible_driver_index) > 0:
                 itinerary_node_list, itinerary_segment_dis_list, dis_array = \
-                    cruising(eligible_driver_table, self.GS.df_zone_info, self.GS.adj_mat, self.cruise_mode)
+                    cruising(eligible_driver_table,self.cruise_mode)
                 self.driver_table.loc[eligible_driver_index, 'remaining_time'] = dis_array / self.vehicle_speed
                 self.driver_table.loc[eligible_driver_index, 'time_to_last_cruising'] = 0
                 self.driver_table.loc[eligible_driver_index, 'current_road_node_index'] = 0

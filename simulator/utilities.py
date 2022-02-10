@@ -117,7 +117,9 @@ def route_generation_array(origin_coord_array, dest_coord_array, mode='complete'
     dis_array = []
     if mode == 'complete':
         # 返回完整itinerary
-        itinerary_node_list = ox.distance.shortest_path(G, origin_node_list, dest_node_list, weight='length', cpus=16)
+        for origin,dest in zip(origin_node_list,dest_node_list):
+            itinerary_node_list.append(ox.distance.shortest_path(G, origin, dest, weight='length', cpus=16))
+        # itinerary_node_list = ox.distance.shortest_path(G, origin_node_list, dest_node_list, weight='length', cpus=16)
         for itinerary_node in itinerary_node_list:
             itinerary_segment_dis = []
             for i in range(len(itinerary_node) - 1):
@@ -173,19 +175,19 @@ def route_generation_array(origin_coord_array, dest_coord_array, mode='complete'
     return itinerary_node_list, itinerary_segment_dis_list, dis_array
 
 
-class GridSystem:
-    def __init__(self, **kwargs):
-        pass
+# class GridSystem:
+#     def __init__(self, **kwargs):
+#         pass
 
-    def load_data(self, data_path):
-        # self.df_zone_info = pickle.load(open(data_path + 'zone_info.pickle', 'rb'))
-        self.df_zone_info = pickle.load(open(data_path + 'zone_info.pickle', 'rb'))
-        self.num_grid = self.df_zone_info.shape[0]
-        self.adj_mat = pickle.load(open(data_path + 'adj_matrix.pickle', 'rb'))
+#     def load_data(self, data_path):
+#         # self.df_zone_info = pickle.load(open(data_path + 'zone_info.pickle', 'rb'))
+#         self.df_zone_info = pickle.load(open(data_path + 'zone_info.pickle', 'rb'))
+#         self.num_grid = self.df_zone_info.shape[0]
+#         self.adj_mat = pickle.load(open(data_path + 'adj_matrix.pickle', 'rb'))
 
-    def get_basics(self):
-        # output: basic information about the grid network
-        return self.num_grid
+#     def get_basics(self):
+#         # output: basic information about the grid network
+#         return self.num_grid
 
 
 class road_network:
@@ -308,6 +310,7 @@ def reposition(eligible_driver_table, df_zone_info, adj_mat, mode):
 
 # cruising，暂时先不定义
 def cruising(eligible_driver_table, df_zone_info, adj_mat, mode):
+    print("start cruise")
     # 需用到route_generation_array
     itinerary_node_list = []
     itinerary_segment_dis_list = []
