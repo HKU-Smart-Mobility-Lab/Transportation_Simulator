@@ -14,10 +14,13 @@ from tqdm import tqdm
 import osmnx as ox
 import pickle
 from utilities import G
+import warnings
+
+warnings.filterwarnings("ignore")
 
 
 def csv_to_pickle(input_file, output_file):
-    data_num = 109
+    data_num = 1000
 
     data = pd.read_csv(input_file)
     data = data.head(data_num)
@@ -35,8 +38,14 @@ def csv_to_pickle(input_file, output_file):
     pickup_time_new = []
     for i in tqdm(range(data_num)):
         try:
-            ori_id, temp_ori_lat, temp_ori_lng = find_closest_point(ori_lat[i], ori_lng[i])
-            dest_id, temp_dest_lat, temp_dest_lng = find_closest_point(dest_lat[i], dest_lng[i])
+            x = ox.distance.get_nearest_node(G, (ori_lat[i], ori_lng[i]), method=None, return_dist=False)
+            nodes = ox.graph_to_gdfs(G, edges=False)
+            point = nodes['geometry'][x]
+            ori_id, temp_ori_lat, temp_ori_lng = x, point.y, point.x
+            x = ox.distance.get_nearest_node(G, (dest_lat[i], dest_lng[i]), method=None, return_dist=False)
+            nodes = ox.graph_to_gdfs(G, edges=False)
+            point = nodes['geometry'][x]
+            dest_id, temp_dest_lat, temp_dest_lng = x, point.y, point.x
             ori_list.append(ori_id)
             origin_lng.append(temp_ori_lng)
             origin_lat.append(temp_ori_lat)
@@ -45,6 +54,7 @@ def csv_to_pickle(input_file, output_file):
             dest_openstreetmap_lat.append(temp_dest_lat)
             pickup_time_new.append(pickup_time[i])
         except:
+            data.drop(index=i)
             print('wrong!')
     data_num = len(origin_lng)
     ori_grid_id = []
@@ -81,6 +91,40 @@ def csv_to_pickle(input_file, output_file):
     pickle.dump(requests, open(output_file, 'wb'))
 
 
+def nyu_add_node_id_grid():
+    raw_data = pickle.load(open('./input/requests_real_data.pickle', 'rb'))
+    day = '2015-07-01'
+    data = raw_data[day]
+    results = {}
+    for second in tqdm(data):
+        minute = int(int(second) / 60)
+        results[minute] = []
+        for order in data[second]:
+            ori_lng = order[3]
+            ori_lat = order[4]
+            dest_lng = order[5]
+            dest_lat = order[6]
+            x = ox.distance.get_nearest_node(G, (ori_lat, ori_lng), method=None, return_dist=False)
+            nodes = ox.graph_to_gdfs(G, edges=False)
+            point = nodes['geometry'][x]
+            ori_id, temp_ori_lat, temp_ori_lng = x, point.y, point.x
+            x = ox.distance.get_nearest_node(G, (dest_lat, dest_lng), method=None, return_dist=False)
+            nodes = ox.graph_to_gdfs(G, edges=False)
+            point = nodes['geometry'][x]
+            dest_id, temp_dest_lat, temp_dest_lng = x, point.y, point.x
+
+            ori_grid_id = get_zone(temp_ori_lat, temp_ori_lng)
+            dest_grid_id = get_zone(temp_dest_lat, temp_dest_lng)
+            itenerary_list = ox.distance.shortest_path(G, ori_id, dest_id, weight='length', cpus=1)
+            # order[7] = distance
+            records = ['CMT', order[7], temp_ori_lng, temp_ori_lat, temp_dest_lng, temp_dest_lat, 0, ori_id,
+                       dest_id, ori_grid_id, dest_grid_id, itenerary_list, [], 1, 0]
+
+            results[minute].append(records)
+    pickle.dump(results, open('./output/nyu_07_01.pickle', 'wb'))
+
+
 if __name__ == '__main__':
-    output_file = './output/requests_test_10_order.pickle'
-    csv_to_pickle('./input/dataset.csv', output_file)
+    # output_file = './output/requests_test_109_order.pickle'
+    # csv_to_pickle('./input/dataset.csv', output_file)
+    nyu_add_node_id_grid()
