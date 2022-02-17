@@ -241,10 +241,10 @@ class Simulator:
             # column_name = ['order_id', 'origin_lng', 'origin_lat', 'dest_lng', 'dest_lat', 'immediate_reward',
             #               'trip_distance', 'trip_time', 'designed_reward', 'dest_grid_id', 'cancel_prob',
             #               'itinerary_node_list', 'itinerary_segment_dis_list']
-           column_name = ['ID', 'trip_distance', 'origin_lng', 'origin_lat',
-       'dest_lng', 'dest_lat', 'trip_time', 'origin_id', 'dest_id',
+           column_name = ['ID', 'origin_id','origin_lng', 'origin_lat','dest_id',
+       'dest_lng', 'dest_lat', 'trip_distance', 'start_time',
        'origin_grid_id', 'dest_grid_id', 'itinerary_segment_dis_list',
-       'itinerary_node_list', 'designed_reward', 'cancel_prob']
+       'itinerary_node_list', 'trip_time', 'designed_reward', 'cancel_prob']
            if len(sampled_requests) > 0:
                wait_info = pd.DataFrame(sampled_requests, columns=column_name)
                wait_info['dest_grid_id'] = wait_info['dest_grid_id'].values.astype(int)
