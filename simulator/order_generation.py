@@ -20,66 +20,35 @@ warnings.filterwarnings("ignore")
 
 
 def csv_to_pickle(input_file, output_file):
-    data_num = 1000
-
     data = pd.read_csv(input_file)
-    data = data.head(data_num)
+    ori_node = data['ori_node_id'].tolist()
     ori_lng = data['origin_lng'].tolist()
     ori_lat = data['origin_lat'].tolist()
     dest_lng = data['dest_lng'].tolist()
     dest_lat = data['dest_lat'].tolist()
-    pickup_time = data['trip_time'].tolist()
-    ori_list = []
-    origin_lng = []
-    origin_lat = []
-    dest_list = []
-    dest_openstreetmap_lng = []
-    dest_openstreetmap_lat = []
-    pickup_time_new = []
-    for i in tqdm(range(data_num)):
-        try:
-            x = ox.distance.get_nearest_node(G, (ori_lat[i], ori_lng[i]), method=None, return_dist=False)
-            nodes = ox.graph_to_gdfs(G, edges=False)
-            point = nodes['geometry'][x]
-            ori_id, temp_ori_lat, temp_ori_lng = x, point.y, point.x
-            x = ox.distance.get_nearest_node(G, (dest_lat[i], dest_lng[i]), method=None, return_dist=False)
-            nodes = ox.graph_to_gdfs(G, edges=False)
-            point = nodes['geometry'][x]
-            dest_id, temp_dest_lat, temp_dest_lng = x, point.y, point.x
-            ori_list.append(ori_id)
-            origin_lng.append(temp_ori_lng)
-            origin_lat.append(temp_ori_lat)
-            dest_list.append(dest_id)
-            dest_openstreetmap_lng.append(temp_dest_lng)
-            dest_openstreetmap_lat.append(temp_dest_lat)
-            pickup_time_new.append(pickup_time[i])
-        except:
-            data.drop(index=i)
-            print('wrong!')
-    data_num = len(origin_lng)
+    dest_node = data['dest_node_id'].tolist()
+    trip_distance = data['trip_distance'].tolist()
+    pickup_time = data['start_time'].tolist()
     ori_grid_id = []
     dest_grid_id = []
-    for i in range(data_num):
+    for i in tqdm(range(len(data))):
         try:
-            ori_grid_id.append(get_zone(origin_lat[i], origin_lng[i]))
-            dest_grid_id.append(get_zone(dest_openstreetmap_lat[i], dest_openstreetmap_lng[i]))
+            ori_grid_id.append(get_zone(ori_lat[i], ori_lng[i]))
+            dest_grid_id.append(get_zone(dest_lat[i], dest_lng[i]))
         except:
-            print(ori_list[i])
-            print(dest_list[i])
+            print("exception")
     print('finish!')
-    data['origin_id'] = ori_list
-    data['dest_id'] = dest_list
     data['origin_grid'] = ori_grid_id
     data['dest_grid'] = dest_grid_id
-    itenerary_list = ox.distance.shortest_path(G, ori_list, dest_list, weight='length', cpus=1)
+    itenerary_list = ox.distance.shortest_path(G, ori_node, dest_node, weight='length', cpus=1)
     data['itinerary_segment_dis_list'] = itenerary_list
     data['itinerary_node_list'] = pd.Series([[] for _ in range(len(data))])
-    data['trip_time'] = [0] * data_num
-    data['designed_reward'] = [1] * data_num
-    data['cancel_prob'] = [0] * data_num
+    data['trip_time'] = [0] * len(data)
+    data['designed_reward'] = [1] * len(data)
+    data['cancel_prob'] = [0] * len(data)
 
     requests = {}
-    for i, item in enumerate(pickup_time):
+    for i, item in tqdm(enumerate(pickup_time)):
         if item not in requests.keys():
             requests[item] = [data.iloc[i].tolist()]
         else:
@@ -125,6 +94,6 @@ def nyu_add_node_id_grid():
 
 
 if __name__ == '__main__':
-    # output_file = './output/requests_test_109_order.pickle'
-    # csv_to_pickle('./input/dataset.csv', output_file)
-    nyu_add_node_id_grid()
+    output_file = './output/multi_thread_order.pickle'
+    csv_to_pickle('multi_thread.csv', output_file)
+    # nyu_add_node_id_grid()

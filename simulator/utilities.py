@@ -12,7 +12,7 @@ from tqdm import tqdm
 import pandas as pd
 import sys
 G = ox.graph_from_bbox(env_params['north_lat'], env_params['south_lat'], env_params['east_lng']
-                       , env_params['west_lng'], network_type='drive_service')
+                       , env_params['west_lng'], network_type='drive')
 gdf_nodes, gdf_edges = ox.graph_to_gdfs(G)
 lat_list = gdf_nodes['y'].tolist()
 lng_list = gdf_nodes['x'].tolist()
@@ -68,11 +68,11 @@ def distance(coord_1, coord_2):
 
     alat = sin(dlat / 2) ** 2
     clat = 2 * atan2(alat ** 0.5, (1 - alat) ** 0.5)
-    lat_dis = clat * r * 1000
+    lat_dis = clat * r
 
     alon = sin(dlon / 2) ** 2
     clon = 2 * atan2(alon ** 0.5, (1 - alon) ** 0.5)
-    lon_dis = clon * r * 1000
+    lon_dis = clon * r
 
     manhattan_dis = abs(lat_dis) + abs(lon_dis)
 
@@ -310,7 +310,6 @@ def reposition(eligible_driver_table, df_zone_info, adj_mat, mode):
 
 # cruising，暂时先不定义
 def cruising(eligible_driver_table, df_zone_info, adj_mat, mode):
-    print("start cruise")
     # 需用到route_generation_array
     itinerary_node_list = []
     itinerary_segment_dis_list = []
@@ -320,9 +319,10 @@ def cruising(eligible_driver_table, df_zone_info, adj_mat, mode):
     random_number = np.random.randint(0, side * side - 1)
     dest_array = []
     print("eligible_driver_table",eligible_driver_table)
-    sys.pause()
+    # sys.pause()
     for _ in range(len(eligible_driver_table)):
         if mode == 'random':
+            print("random")
             record = result[result['grid_id'] == random_number]
         elif mode == 'nearby':
             record = result[result['grid_id'] == random_number]
@@ -380,18 +380,7 @@ def driver_online_offline_decision(driver_table, current_time):
 
 
 # define the function to get zone_id of segment node
-def get_zone(lat, lng, center, side, interval):
-    if lat < center[1]:
-        i = math.floor(side / 2) - math.ceil((center[1] - lat) / interval)
-    else:
-        i = math.floor(side / 2) + math.ceil((lat - center[1]) / interval) - (1 - side % 2)
 
-    if lng < center[0]:
-        j = math.floor(side / 2) - math.ceil((center[0] - lng) / interval)
-    else:
-        j = math.floor(side / 2) + math.ceil((lng - center[0]) / interval) - (1 - side % 2)
-
-    return int(i * side + j)
 
 
 def get_nodeId_from_coordinate(lat, lng):

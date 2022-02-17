@@ -126,7 +126,7 @@ class Simulator:
             matched_itinerary_df['pickup_distance'] = matched_itinerary[2]
         matched_order_id_list = matched_pair_index_df['order_id'].values.tolist()
         con_matched = self.wait_requests['order_id'].isin(matched_order_id_list)
-        con_keep_wait = self.wait_requests['wait_time'] == self.wait_requests['maximum_wait_time']
+        con_keep_wait = self.wait_requests['wait_time'] <= self.wait_requests['maximum_wait_time']
 
         # when the order is matched
         df_matched = self.wait_requests[con_matched].reset_index(drop=True)
@@ -200,7 +200,7 @@ class Simulator:
                     pickup_time = len(time_array) - delivery_time
                     task_type_array = np.concatenate([2 + np.zeros(pickup_time), 1 + np.zeros(delivery_time)])
                     print('grid_id_array',grid_id_array)
-                    self.new_tracks[driver_id] = np.vstack([lng_array, lat_array,np.array(node_id_list),grid_id_array,task_type_array, time_array]).T.tolist()
+                    self.new_tracks[driver_id] = np.vstack([lat_array, lng_array,np.array(node_id_list),grid_id_array,task_type_array, time_array]).T.tolist()
 
         # when the order is not matched
         update_wait_requests = pd.concat([update_wait_requests, self.wait_requests[~con_matched & con_keep_wait]],axis=0)
@@ -267,7 +267,6 @@ class Simulator:
 
         # reposition decision
         # total_idle_time 为reposition间的间隔， time to last cruising 为cruising间的间隔。
-        print("start reposition and cruise")
         if self.reposition_flag == True:
             print("reposition")
             con_eligibe = (self.driver_table['total_idle_time'] > self.eligible_time_for_reposition) & \
@@ -330,11 +329,11 @@ class Simulator:
         for i in range(len(lng_array)):
                         id = node_coord_to_id[(lat_array[i],lng_array[i])]
                         node_list.append(id)
-                        grid_list.append(result[result['node_id'] == id ]['grid_id'])
+                        grid_list.append(result[result['node_id'] == id ]['grid_id'].tolist()[0])
         real_time_driver_table['node_id'] = node_list
         real_time_driver_table['grid_id'] = grid_list
         real_time_driver_table = real_time_driver_table[['driver_id','lat','lng','node_id','grid_id','time','status']]
-        # print("columns",real_time_driver_table.columns)
+        print("columns",real_time_driver_table)
         real_time_tracks = real_time_driver_table.set_index('driver_id').T.to_dict('list')
         self.new_tracks = {**self.new_tracks, **real_time_tracks}
 

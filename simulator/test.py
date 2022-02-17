@@ -7,11 +7,11 @@ import osmnx as ox
 import time
 from tqdm import tqdm
 
-# records = pickle.load(open('toy_driver_info' + '.pickle', 'rb'))
+records = pickle.load(open('driver_info' + '.pickle', 'rb'))
 # zone_info = pickle.load(open(data_path + 'zone_info.pickle', 'rb'))
 # records = pickle.load(open('toy_records' + '.pickle', 'rb'))
 # adj_mat = pickle.load(open(data_path + 'adj_matrix.pickle', 'rb'))
-# request = pickle.load(open(data_path + 'driver_info.pickle', 'rb'))
+# request = pickle.load(open(data_path + 'multi_thread.pickle', 'rb'))
 # request = pickle.load(open(data_path + 'requests_test.pickle', 'rb'))
 
 # request = request[:10]
@@ -25,7 +25,7 @@ from tqdm import tqdm
 #         requests[str(i)] = []
 #
 #
-# print(records)
+print(records)
 
 # G = ox.graph_from_bbox(env_params['north_lat'], env_params['south_lat'], env_params['east_lng']
                     #    , env_params['west_lng'], network_type='drive_service')
@@ -47,29 +47,56 @@ from tqdm import tqdm
 # interval = 2 * radius / side
 
 
-def solve( s: str, t: str) -> str:
-        # write code here
-        s_length,t_length = len(s), len(t)
-        max_length = max(s_length,t_length)
+# def solve( s: str, t: str) -> str:
+#         # write code here
+#         s_length,t_length = len(s), len(t)
+#         max_length = max(s_length,t_length)
         
-        result = ''
-        flag = 0
-        for i in range(max_length):
+#         result = ''
+#         flag = 0
+#         for i in range(max_length):
             
-            if i < s_length:
-                s_value = int(s[s_length - i - 1])
-            else:
-                s_value = 0
-            if i < t_length:
-                t_value = int(t[t_length - i - 1])
-            else:
-                t_value = 0
+#             if i < s_length:
+#                 s_value = int(s[s_length - i - 1])
+#             else:
+#                 s_value = 0
+#             if i < t_length:
+#                 t_value = int(t[t_length - i - 1])
+#             else:
+#                 t_value = 0
             
 
-            result += str(int((s_value + t_value + flag) % 10))
-            flag = int((s_value + t_value + flag) / 10)
-        if flag:
-            result += str(int(flag))
-        return result[::-1]
+#             result += str(int((s_value + t_value + flag) % 10))
+#             flag = int((s_value + t_value + flag) / 10)
+#         if flag:
+#             result += str(int(flag))
+#         return result[::-1]
 
-print(solve("1258994789086810959258888307221656691275942378416703768","7007001981958278066472683068554254815482631701142544497"))
+# print(solve("1258994789086810959258888307221656691275942378416703768","7007001981958278066472683068554254815482631701142544497"))
+# data = pd.DataFrame()
+# ori_lat_list = []
+# ori_lng_list = []
+# ori_node_list = []
+# dest_lat_list = []
+# dest_lng_list = []
+# dest_node_list = []
+# distance_list = []
+# time_list = []
+# for item in tqdm(request):
+#     ori_lat_list.append(item['origin_lat'])
+#     ori_lng_list.append(item['origin_lng'])
+#     ori_node_list.append(item['origin_grid'])
+#     dest_lat_list.append(item['dest_lat'])
+#     dest_lng_list.append(item['dest_lng'])
+#     dest_node_list.append(item['dest_grid'])
+#     distance_list.append(item['trip_time'])
+#     time_list.append(item['trip_distance'])
+# data['ori_node_id'] = ori_node_list
+# data['ori_lat'] = ori_lat_list
+# data['ori_lng'] = ori_lng_list
+# data['dest_node_id'] = dest_node_list
+# data['dest_lat'] = dest_lat_list
+# data['dest_lng'] = dest_lng_list
+# data['trip_distance'] = distance_list
+# data['start_time'] = time_list
+# data.to_csv('multi_thread.csv')
