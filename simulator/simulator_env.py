@@ -199,7 +199,6 @@ class Simulator:
                     delivery_time = len(new_matched_requests['itinerary_node_list'][i])
                     pickup_time = len(time_array) - delivery_time
                     task_type_array = np.concatenate([2 + np.zeros(pickup_time), 1 + np.zeros(delivery_time)])
-                    print('grid_id_array',grid_id_array)
                     self.new_tracks[driver_id] = np.vstack([lat_array, lng_array,np.array(node_id_list),grid_id_array,task_type_array, time_array]).T.tolist()
 
         # when the order is not matched
@@ -333,7 +332,7 @@ class Simulator:
         real_time_driver_table['node_id'] = node_list
         real_time_driver_table['grid_id'] = grid_list
         real_time_driver_table = real_time_driver_table[['driver_id','lat','lng','node_id','grid_id','time','status']]
-        print("columns",real_time_driver_table)
+        # print("columns",real_time_driver_table)
         real_time_tracks = real_time_driver_table.set_index('driver_id').T.to_dict('list')
         self.new_tracks = {**self.new_tracks, **real_time_tracks}
 

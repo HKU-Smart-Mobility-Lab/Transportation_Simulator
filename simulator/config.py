@@ -20,7 +20,7 @@ env_params = {
 'track_recording_flag' : True,
 'driver_far_matching_cancel_prob_file' : 'driver_far_matching_cancel_prob',
 'input_file_path':'input/dataset.csv',
-'request_file_name' : 'multi_thread', #'toy_requests',
+'request_file_name' : './output/multi_thread_order', #'toy_requests',
 'driver_file_name' : 'driver_info',
 'road_network_file_name' : 'road_network_information.pickle',
 'dispatch_method': 'LD', #LD: lagarange decomposition method designed by Peibo Duan

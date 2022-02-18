@@ -1,4 +1,5 @@
 from re import I
+from socket import if_indextoname
 import numpy as np
 from copy import deepcopy
 import random
@@ -121,13 +122,14 @@ def route_generation_array(origin_coord_array, dest_coord_array, mode='complete'
             itinerary_node_list.append(ox.distance.shortest_path(G, origin, dest, weight='length', cpus=16))
         # itinerary_node_list = ox.distance.shortest_path(G, origin_node_list, dest_node_list, weight='length', cpus=16)
         for itinerary_node in itinerary_node_list:
-            itinerary_segment_dis = []
-            for i in range(len(itinerary_node) - 1):
-                # dis = nx.shortest_path_length(G, node_id_to_lat_lng[itinerary_node[i]], node_id_to_lat_lng[itinerary_node[i + 1]], weight='length')
-                dis = distance(node_id_to_lat_lng[itinerary_node[i]], node_id_to_lat_lng[itinerary_node[i + 1]])
-                itinerary_segment_dis.append(dis)
-            dis_array.append(sum(itinerary_segment_dis))
-            itinerary_segment_dis_list.append(itinerary_segment_dis)
+            if itinerary_node is not None:
+                itinerary_segment_dis = []
+                for i in range(len(itinerary_node) - 1):
+                    # dis = nx.shortest_path_length(G, node_id_to_lat_lng[itinerary_node[i]], node_id_to_lat_lng[itinerary_node[i + 1]], weight='length')
+                    dis = distance(node_id_to_lat_lng[itinerary_node[i]], node_id_to_lat_lng[itinerary_node[i + 1]])
+                    itinerary_segment_dis.append(dis)
+                dis_array.append(sum(itinerary_segment_dis))
+                itinerary_segment_dis_list.append(itinerary_segment_dis)
 
         # a toy example
         # for i in range(origin_coord_array.shape[0]):
@@ -163,7 +165,10 @@ def route_generation_array(origin_coord_array, dest_coord_array, mode='complete'
         # dis_array.append(dis)
         # dis_array = np.array(dis_array)
         itinerary_node_list = ox.distance.shortest_path(G, origin_node_list, dest_node_list, weight='length', cpus=16)
-        for itinerary_node in itinerary_node_list:
+        
+        for index,itinerary_node in enumerate(itinerary_node_list):
+            if itinerary_node is None:
+                print("None:",index)
             itinerary_segment_dis = []
             for i in range(len(itinerary_node) - 1):
                 # dis = nx.shortest_path_length(G, node_id_to_lat_lng[itinerary_node[i]], node_id_to_lat_lng[itinerary_node[i + 1]], weight='length')

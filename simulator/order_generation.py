@@ -27,7 +27,6 @@ def csv_to_pickle(input_file, output_file):
     dest_lng = data['dest_lng'].tolist()
     dest_lat = data['dest_lat'].tolist()
     dest_node = data['dest_node_id'].tolist()
-    trip_distance = data['trip_distance'].tolist()
     pickup_time = data['start_time'].tolist()
     ori_grid_id = []
     dest_grid_id = []
