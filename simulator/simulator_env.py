@@ -75,10 +75,11 @@ class Simulator:
         self.finish_run_step = int((self.t_end - self.t_initial) // self.delta_t)
 
         # request tables
-        self.request_columns = ['order_id', 'trip_time', 'origin_lng', 'origin_lat', 'dest_lng', 'dest_lat',
-                                'immediate_reward', 'designed_reward', 'dest_grid_id', 't_start', 't_matched',
-                                'pickup_time', 'wait_time', 't_end', 'status', 'driver_id', 'maximum_wait_time', 'cancel_prob',
-                                'pickup_distance', 'itinerary_node_list', 'itinerary_segment_dis_list']
+        self.request_columns = ['order_id', 'origin_id', 'origin_lat', 'origin_lng', 'dest_id','dest_lat', 'dest_lng','trip_distance','start_time','origin_grid_id','dest_grid_id',
+                                'itinerary_node_list', 'itinerary_segment_dis_list','trip_time', 'cancel_prob', 't_matched',
+                                'pickup_time', 'wait_time', 't_end', 'status', 'driver_id', 'maximum_wait_time', 
+                                'pickup_distance']
+                      
         self.wait_requests = None
         self.matched_requests = None
 
@@ -229,30 +230,28 @@ class Simulator:
                sampled_request_index = np.random.choice(database_size, num_request).tolist()
                sampled_requests = [self.request_database[index] for index in sampled_request_index]
 
-           #generate weights for order dispatching
-           weight_array = np.ones(len(sampled_requests))
-           if self.method == 'instant_reward_no_subway':
-               for i, request in enumerate(sampled_requests):
-                   weight_array[i] = request[5]
+           
+
 
            #generate complete information for new orders
            np.warnings.filterwarnings('ignore', category=np.VisibleDeprecationWarning)
-            # column_name = ['order_id', 'origin_lng', 'origin_lat', 'dest_lng', 'dest_lat', 'immediate_reward',
-            #               'trip_distance', 'trip_time', 'designed_reward', 'dest_grid_id', 'cancel_prob',
-            #               'itinerary_node_list', 'itinerary_segment_dis_list']
-           column_name = ['ID', 'origin_id','origin_lng', 'origin_lat','dest_id',
-       'dest_lng', 'dest_lat', 'trip_distance', 'start_time',
-       'origin_grid_id', 'dest_grid_id', 'itinerary_segment_dis_list',
-       'itinerary_node_list', 'trip_time', 'designed_reward', 'cancel_prob']
+            
+           column_name = ['order_id', 'origin_id','origin_lat', 'origin_lng','dest_id',
+       'dest_lat', 'dest_lng', 'trip_distance', 'start_time',
+       'origin_grid_id', 'dest_grid_id', 'itinerary_node_list','itinerary_segment_dis_list',
+        'trip_time','designed_reward', 'cancel_prob']
+                         
+
+        #                         'wait_time','status','maximum_wait_time','pickup_distance','pickup_time', 'driver_id',  't_matched'
            if len(sampled_requests) > 0:
                wait_info = pd.DataFrame(sampled_requests, columns=column_name)
-               wait_info['dest_grid_id'] = wait_info['dest_grid_id'].values.astype(int)
-               wait_info['t_start'] = self.time
+               wait_info['start_time'] = self.time
                wait_info['wait_time'] = 0
                wait_info['status'] = 0
                wait_info['maximum_wait_time'] = self.maximum_wait_time_mean
-               wait_info['weight'] = weight_array
+               wait_info['weight'] = wait_info['trip_distance'] * 3.2
                wait_info = wait_info.drop(columns=['trip_distance'])
+               wait_info = wait_info.drop(columns=['designed_reward'])
 
                self.wait_requests = pd.concat([self.wait_requests, wait_info], ignore_index=True)
 
@@ -268,6 +267,7 @@ class Simulator:
         # total_idle_time 为reposition间的间隔， time to last cruising 为cruising间的间隔。
         if self.reposition_flag == True:
             print("reposition")
+            print("total_idle_time",self.driver_table['total_idle_time'])
             con_eligibe = (self.driver_table['total_idle_time'] > self.eligible_time_for_reposition) & \
                           (self.driver_table['status'] == 0)
             eligible_driver_table = self.driver_table[con_eligibe]
@@ -447,7 +447,7 @@ class Simulator:
             self.driver_table.loc[delivery_finished_driver_index, 'itinerary_node_list'] = np.array(empty_list + [[-1]], dtype=object)[:-1]
             self.driver_table.loc[delivery_finished_driver_index, 'itinerary_segment_dis_list'] = np.array(empty_list + [[-1]], dtype=object)[:-1]
             self.driver_table.loc[delivery_finished_driver_index, 'matched_order_id'] = 'None'
-
+        self.wait_requests['wait_time'] += self.delta_t
         return
 
     def driver_online_offline_update(self):

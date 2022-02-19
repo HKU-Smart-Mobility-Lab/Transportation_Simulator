@@ -12,6 +12,7 @@ import osmnx as ox
 from tqdm import tqdm
 import pandas as pd
 import sys
+from collections import Counter
 G = ox.graph_from_bbox(env_params['north_lat'], env_params['south_lat'], env_params['east_lng']
                        , env_params['west_lng'], network_type='drive')
 gdf_nodes, gdf_edges = ox.graph_to_gdfs(G)
@@ -119,7 +120,11 @@ def route_generation_array(origin_coord_array, dest_coord_array, mode='complete'
     if mode == 'complete':
         # 返回完整itinerary
         for origin,dest in zip(origin_node_list,dest_node_list):
-            itinerary_node_list.append(ox.distance.shortest_path(G, origin, dest, weight='length', cpus=16))
+            ite = ox.distance.shortest_path(G, origin, dest, weight='length', cpus=16)
+            if ite is not None:
+                itinerary_node_list.append(ite)
+            else:
+                itinerary_node_list.append([origin,dest])
         # itinerary_node_list = ox.distance.shortest_path(G, origin_node_list, dest_node_list, weight='length', cpus=16)
         for itinerary_node in itinerary_node_list:
             if itinerary_node is not None:
@@ -164,16 +169,27 @@ def route_generation_array(origin_coord_array, dest_coord_array, mode='complete'
         # itinerary_segment_dis_list.append(itinerary_segment_dis)
         # dis_array.append(dis)
         # dis_array = np.array(dis_array)
-        itinerary_node_list = ox.distance.shortest_path(G, origin_node_list, dest_node_list, weight='length', cpus=16)
+        for origin,dest in zip(origin_node_list,dest_node_list):
+
+            ite = ox.distance.shortest_path(G, origin, dest, weight='length', cpus=16)
+            if ite is not None:
+                itinerary_node_list.append(ite)
+            else:
+                itinerary_node_list.append([origin,dest])
+
         
-        for index,itinerary_node in enumerate(itinerary_node_list):
-            if itinerary_node is None:
-                print("None:",index)
+
+        for itinerary_node in itinerary_node_list:
             itinerary_segment_dis = []
             for i in range(len(itinerary_node) - 1):
                 # dis = nx.shortest_path_length(G, node_id_to_lat_lng[itinerary_node[i]], node_id_to_lat_lng[itinerary_node[i + 1]], weight='length')
-                dis = distance(node_id_to_lat_lng[itinerary_node[i]], node_id_to_lat_lng[itinerary_node[i + 1]])
+                try:
+                    dis = distance(node_id_to_lat_lng[itinerary_node[i]], node_id_to_lat_lng[itinerary_node[i + 1]])
+                except:
+                    print("itinerary exception")
+           
                 itinerary_segment_dis.append(dis)
+            itinerary_node.pop()
             dis_array.append(sum(itinerary_segment_dis))
             itinerary_segment_dis_list.append(itinerary_segment_dis)
     dis_array = np.array(dis_array)
@@ -229,9 +245,11 @@ class road_network:
         # pickle.dump(result, open('./road_network_information' + '.pickle', 'wb'))
 
     def get_information_for_nodes(self, node_id_array):
-        lng_array = self.df_road_network.loc[node_id_array, 'lng'].values
-        lat_array = self.df_road_network.loc[node_id_array, 'lat'].values
-        grid_id_array = self.df_road_network.loc[node_id_array, 'grid_id'].values
+        # print(Counter(node_id_array))
+        index_list = [self.df_road_network[self.df_road_network['node_id'] == item].index[0] for item in node_id_array]
+        lng_array = self.df_road_network.loc[index_list,'lng'].values
+        lat_array = self.df_road_network.loc[index_list,'lat'].values
+        grid_id_array = self.df_road_network.loc[index_list,'grid_id'].values
         return lng_array, lat_array, grid_id_array
 
 
@@ -391,7 +409,7 @@ def driver_online_offline_decision(driver_table, current_time):
 def get_nodeId_from_coordinate(lat, lng):
     node_list = []
     for i in range(len(lat)):
-        x = ox.distance.get_nearest_node(G, (lat[i], lng[i]), method=None, return_dist=False)
+        x = node_coord_to_id[(lat[i],lng[i])]
         node_list.append(x)
     return node_list
 

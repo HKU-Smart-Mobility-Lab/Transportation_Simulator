@@ -7,11 +7,11 @@ import osmnx as ox
 import time
 from tqdm import tqdm
 
-records = pickle.load(open('driver_info' + '.pickle', 'rb'))
+# records = pickle.load(open('driver_info' + '.pickle', 'rb'))
 # zone_info = pickle.load(open(data_path + 'zone_info.pickle', 'rb'))
 # records = pickle.load(open('toy_records' + '.pickle', 'rb'))
 # adj_mat = pickle.load(open(data_path + 'adj_matrix.pickle', 'rb'))
-# request = pickle.load(open(data_path + 'multi_thread.pickle', 'rb'))
+request = pickle.load(open(data_path + './output/multi_thread_order.pickle', 'rb'))
 # request = pickle.load(open(data_path + 'requests_test.pickle', 'rb'))
 
 # request = request[:10]
@@ -25,7 +25,7 @@ records = pickle.load(open('driver_info' + '.pickle', 'rb'))
 #         requests[str(i)] = []
 #
 #
-print(records)
+print(request[0])
 
 # G = ox.graph_from_bbox(env_params['north_lat'], env_params['south_lat'], env_params['east_lng']
                     #    , env_params['west_lng'], network_type='drive_service')
