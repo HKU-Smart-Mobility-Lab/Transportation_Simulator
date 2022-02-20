@@ -13,8 +13,13 @@ from tqdm import tqdm
 import pandas as pd
 import sys
 from collections import Counter
-G = ox.graph_from_bbox(env_params['north_lat'], env_params['south_lat'], env_params['east_lng']
-                       , env_params['west_lng'], network_type='drive')
+# G = ox.graph_from_bbox(env_params['north_lat'], env_params['south_lat'], env_params['east_lng']
+#                        , env_params['west_lng'], network_type='drive')
+
+# ox.save_graphml(G,'./input/graph.graphml')
+G = ox.load_graphml('./input/graph.graphml')
+import time
+t = time.time()
 gdf_nodes, gdf_edges = ox.graph_to_gdfs(G)
 lat_list = gdf_nodes['y'].tolist()
 lng_list = gdf_nodes['x'].tolist()
@@ -32,7 +37,7 @@ radius = max(abs(env_params['east_lng'] - env_params['west_lng']) / 2,
 side = 4
 interval = 2 * radius / side
 
-
+print(time.time()-t)
    
 
 
@@ -59,7 +64,7 @@ for i in range(len(result)):
     nodelist.append(get_zone(lat_list[i], lng_list[i]))
 result['grid_id'] = nodelist
 
-
+print(time.time()-t)
 def distance(coord_1, coord_2):
     lon1, lat1 = coord_1
     lon2, lat2 = coord_2
@@ -128,7 +133,7 @@ def route_generation_array(origin_coord_array, dest_coord_array, mode='complete'
         # itinerary_node_list = ox.distance.shortest_path(G, origin_node_list, dest_node_list, weight='length', cpus=16)
         for itinerary_node in itinerary_node_list:
             if itinerary_node is not None:
-                itinerary_segment_dis = []
+                itinerary_segment_dis = [0]
                 for i in range(len(itinerary_node) - 1):
                     # dis = nx.shortest_path_length(G, node_id_to_lat_lng[itinerary_node[i]], node_id_to_lat_lng[itinerary_node[i + 1]], weight='length')
                     dis = distance(node_id_to_lat_lng[itinerary_node[i]], node_id_to_lat_lng[itinerary_node[i + 1]])
@@ -191,6 +196,9 @@ def route_generation_array(origin_coord_array, dest_coord_array, mode='complete'
                 itinerary_segment_dis.append(dis)
             itinerary_node.pop()
             dis_array.append(sum(itinerary_segment_dis))
+            # if len(itinerary_node) != itinerary_segment_dis:
+            #     print(len(itinerary_node))
+            #     print(itinerary_segment_dis)
             itinerary_segment_dis_list.append(itinerary_segment_dis)
     dis_array = np.array(dis_array)
     return itinerary_node_list, itinerary_segment_dis_list, dis_array
@@ -312,7 +320,7 @@ def sample_request_num(t_mean, std, delta_t):
 
 
 # reposition，暂时先不定义
-def reposition(eligible_driver_table, df_zone_info, adj_mat, mode):
+def reposition(eligible_driver_table, mode):
     # 需用到route_generation_array
     itinerary_node_list = []
     itinerary_segment_dis_list = []
@@ -327,12 +335,12 @@ def reposition(eligible_driver_table, df_zone_info, adj_mat, mode):
         else:
             dest_array.append([result.iloc[0]['lng'], result.iloc[0]['lat']])
     coord_array = eligible_driver_table.loc[:, ['lng', 'lat']].values
-    itinerary_node_list, itinerary_segment_dis_list, dis_array = route_generation_array(coord_array, dest_array)
+    itinerary_node_list, itinerary_segment_dis_list, dis_array = route_generation_array(coord_array, np.array(dest_array))
     return itinerary_node_list, itinerary_segment_dis_list, dis_array
 
 
 # cruising，暂时先不定义
-def cruising(eligible_driver_table, df_zone_info, adj_mat, mode):
+def cruising(eligible_driver_table, mode):
     # 需用到route_generation_array
     itinerary_node_list = []
     itinerary_segment_dis_list = []
@@ -344,8 +352,7 @@ def cruising(eligible_driver_table, df_zone_info, adj_mat, mode):
     print("eligible_driver_table",eligible_driver_table)
     # sys.pause()
     for _ in range(len(eligible_driver_table)):
-        if mode == 'random':
-            print("random")
+        if True:
             record = result[result['grid_id'] == random_number]
         elif mode == 'nearby':
             record = result[result['grid_id'] == random_number]
@@ -354,7 +361,7 @@ def cruising(eligible_driver_table, df_zone_info, adj_mat, mode):
         else:
             dest_array.append([result.iloc[0]['lng'], result.iloc[0]['lat']])
     coord_array = eligible_driver_table.loc[:, ['lng', 'lat']].values
-    itinerary_node_list, itinerary_segment_dis_list, dis_array = route_generation_array(coord_array, dest_array)
+    itinerary_node_list, itinerary_segment_dis_list, dis_array = route_generation_array(coord_array, np.array(dest_array))
     return itinerary_node_list, itinerary_segment_dis_list, dis_array
 
 

@@ -188,8 +188,10 @@ class Simulator:
                 (matched_itinerary_df[con_remain]['itinerary_segment_dis_list'] + new_matched_requests['itinerary_segment_dis_list']).values
             self.driver_table.loc[cor_driver[con_remain], 'remaining_time_for_current_node'] = \
                 matched_itinerary_df[con_remain]['itinerary_segment_dis_list'].map(lambda x: x[0]).values / self.vehicle_speed
-
-            # update matched tracks for one time
+            # print(self.driver_table.loc[cor_driver[con_remain], 'itinerary_node_list'])
+            # print(len(self.driver_table.loc[cor_driver[con_remain], 'itinerary_node_list'].values.tolist()[0]))
+            # print(len(self.driver_table.loc[cor_driver[con_remain], 'itinerary_segment_dis_list'].values.tolist()[0]))
+            # # update matched tracks for one time
             if self.track_recording_flag == True:
                 for i, index in enumerate(cor_driver[con_remain]):
                     driver_id = self.driver_table.loc[index, 'driver_id']
@@ -201,7 +203,6 @@ class Simulator:
                     pickup_time = len(time_array) - delivery_time
                     task_type_array = np.concatenate([2 + np.zeros(pickup_time), 1 + np.zeros(delivery_time)])
                     self.new_tracks[driver_id] = np.vstack([lat_array, lng_array,np.array(node_id_list),grid_id_array,task_type_array, time_array]).T.tolist()
-
         # when the order is not matched
         update_wait_requests = pd.concat([update_wait_requests, self.wait_requests[~con_matched & con_keep_wait]],axis=0)
 
@@ -219,7 +220,6 @@ class Simulator:
            sampled_requests = []
            count_interval = int(math.floor(self.time / self.request_interval))
         #    print("test",str(count_interval * self.request_interval))
-
            self.request_database = self.request_databases[count_interval * self.request_interval]
            database_size = len(self.request_database)
 
@@ -244,11 +244,36 @@ class Simulator:
 
         #                         'wait_time','status','maximum_wait_time','pickup_distance','pickup_time', 'driver_id',  't_matched'
            if len(sampled_requests) > 0:
+               len1 = []
+               len2 = []
+               itinerary_segment_dis_list = []
+               itinerary_node_list = np.array(sampled_requests)[:, 11]
+               for itinerary_node in itinerary_node_list:
+                   if itinerary_node is not None:
+                       itinerary_segment_dis = []
+                       for i in range(len(itinerary_node) - 1):
+                           # dis = nx.shortest_path_length(G, node_id_to_lat_lng[itinerary_node[i]], node_id_to_lat_lng[itinerary_node[i + 1]], weight='length')
+                           dis = distance(node_id_to_lat_lng[itinerary_node[i]],
+                                          node_id_to_lat_lng[itinerary_node[i + 1]])
+                           itinerary_segment_dis.append(dis)
+                       len1.append(len(itinerary_node))
+                       len2.append(len(itinerary_segment_dis))
+                       itinerary_segment_dis_list.append(itinerary_segment_dis)
+               for i in range(len(itinerary_node_list)):
+                   if len(itinerary_node_list[i]) == len(itinerary_segment_dis_list[i]):
+                       continue
+                   # temp = itinerary_node_list[i][:-1]
+                   # itinerary_node_list[i] = temp
+                   itinerary_node_list[i].pop()
+
+
                wait_info = pd.DataFrame(sampled_requests, columns=column_name)
+               wait_info['itinerary_node_list'] = itinerary_node_list
                wait_info['start_time'] = self.time
                wait_info['wait_time'] = 0
                wait_info['status'] = 0
                wait_info['maximum_wait_time'] = self.maximum_wait_time_mean
+               wait_info['itinerary_segment_dis_list'] = itinerary_segment_dis_list
                wait_info['weight'] = wait_info['trip_distance'] * 3.2
                wait_info = wait_info.drop(columns=['trip_distance'])
                wait_info = wait_info.drop(columns=['designed_reward'])
@@ -267,11 +292,11 @@ class Simulator:
         # total_idle_time 为reposition间的间隔， time to last cruising 为cruising间的间隔。
         if self.reposition_flag == True:
             print("reposition")
-            print("total_idle_time",self.driver_table['total_idle_time'])
+            # print("total_idle_time",self.driver_table['total_idle_time'])
             con_eligibe = (self.driver_table['total_idle_time'] > self.eligible_time_for_reposition) & \
                           (self.driver_table['status'] == 0)
             eligible_driver_table = self.driver_table[con_eligibe]
-            print("eligible_driver_table",eligible_driver_table)
+            # print("eligible_driver_table",eligible_driver_table)
             eligible_driver_index = np.array(eligible_driver_table.index)
             if len(eligible_driver_index) > 0:
                 itinerary_node_list, itinerary_segment_dis_list, dis_array = \
@@ -442,7 +467,8 @@ class Simulator:
             self.driver_table.loc[delivery_finished_driver_index, ['status', 'time_to_last_cruising',
                                                'current_road_node_index', 'remaining_time_for_current_node']] = 0
             self.driver_table.loc[delivery_finished_driver_index, 'total_idle_time'] = 0
-            shape = self.driver_table[delivery_finished_driver_index].shape[0]
+            # shape = self.driver_table[delivery_finished_driver_index].shape[0]
+            shape = self.driver_table.loc[delivery_finished_driver_index].values.shape[0]
             empty_list = [[] for i in range(shape)]
             self.driver_table.loc[delivery_finished_driver_index, 'itinerary_node_list'] = np.array(empty_list + [[-1]], dtype=object)[:-1]
             self.driver_table.loc[delivery_finished_driver_index, 'itinerary_segment_dis_list'] = np.array(empty_list + [[-1]], dtype=object)[:-1]
@@ -472,31 +498,38 @@ class Simulator:
         wait_requests = deepcopy(self.wait_requests)
         driver_table = deepcopy(self.driver_table)
         matched_pair_actual_indexes, matched_itinerary = order_dispatch(wait_requests, driver_table, self.maximal_pickup_distance, self.dispatch_method)
-
+        print('step1 finished')
         # Step 2: driver/passenger reaction after dispatching
         df_new_matched_requests, df_update_wait_requests = self.update_info_after_matching_multi_process(matched_pair_actual_indexes, matched_itinerary)
         self.matched_requests = pd.concat([self.matched_requests, df_new_matched_requests], axis=0)
         self.matched_requests = self.matched_requests.reset_index(drop=True)
         self.wait_requests = df_update_wait_requests.reset_index(drop=True)
+        print('step2 finished')
 
         # Step 3: bootstrap new orders
         self.order_generation()
+        print('step3 finished')
 
         # Step 4: cruising and/or repositioning decision
         self.cruise_and_reposition()
+        print('step4 finished')
 
         # Step 4.1: track recording
         if self.track_recording_flag == True:
             self.real_time_track_recording()
 
+        print('step4.1 finished')
 
         # Step 5: update next state for drivers
         self.update_state()
+        print('step5 finished')
 
         # Step 6： online/offline update()
         self.driver_online_offline_update()
+        print('step6 finished')
 
         # Step 7: update time
         self.update_time()
+        print('step7 finished')
 
         return self.new_tracks
