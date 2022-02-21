@@ -56,6 +56,12 @@ def csv_to_pickle(input_file, output_file):
     # print('sorting!')
     # for key in sorted(requests):
     #     requests_new[key] = requests[key]
+    for key in requests.keys():       
+        for item in requests[key]:
+            if item[11] is None or len(item[11]) <= 1:
+                print(item[11])
+                requests[key].remove(item)
+                
     pickle.dump(requests, open(output_file, 'wb'))
 
 
