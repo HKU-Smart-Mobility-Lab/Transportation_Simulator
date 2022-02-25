@@ -19,7 +19,7 @@ import random
 from config import *
 from path import *
 import pickle
-
+import sys
 class SimulatorPattern(object):
     def __init__(self, **kwargs):
         # read parameters
@@ -31,6 +31,7 @@ class SimulatorPattern(object):
             self.request_all = pickle.load(open(data_path + self.request_file_name + '.pickle', 'rb'))
             # print(self.request_all)
             self.driver_info = pickle.load(open(data_path + self.driver_file_name + '.pickle', 'rb'))
+            self.driver_info = self.driver_info.sample(n=env_params['driver_num'])
             # print(self.driver_info)
 
 
