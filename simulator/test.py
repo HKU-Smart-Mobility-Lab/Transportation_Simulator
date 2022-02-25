@@ -6,97 +6,42 @@ from config import *
 import osmnx as ox
 import time
 from tqdm import tqdm
-
+import sys
+# from utilities import *
 # records = pickle.load(open('driver_info' + '.pickle', 'rb'))
 # zone_info = pickle.load(open(data_path + 'zone_info.pickle', 'rb'))
 # records = pickle.load(open('toy_records' + '.pickle', 'rb'))
 # adj_mat = pickle.load(open(data_path + 'adj_matrix.pickle', 'rb'))
-request = pickle.load(open(data_path + './output/multi_thread_order.pickle', 'rb'))
+# request = pickle.load(open(data_path + './output/multi_thread_order.pickle', 'rb'))
 # request = pickle.load(open(data_path + 'requests_test.pickle', 'rb'))
 
-# request = request[:10]
-# requests = {}
-# for i in range(10):
-#     if i % 5 == 0:
-#         request_1[0] = str(i//5*2)
-#         request_2[0] = str(1 + i // 5*2)
-#         requests[str(i)] = [deepcopy(request_1), deepcopy(request_2)]
-#     else:
-#         requests[str(i)] = []
+# print(request[0])
+a = pd.DataFrame()
+a['a'] = [1,2,3]
+a['b'] = [2,3,4]
+
+con = a.a < a.b
+print(con.values.tolist())
+# data = pickle.load(open('dataset.pickle','rb'))
+
+# for key in request.keys():
+#     for item in request[key]:
+#         print(item)
+#         if item[11] is None or len(item[11]) <= 1 or item[1] not in node_id_to_lat_lng.keys()\
+#             or item[4] not in node_id_to_lat_lng.keys():
+#             print(item)
+#             request[key].remove(item)
 #
+# pickle.dump(request,open(data_path + './output/multi_thread_order2.pickle', 'wb'))
+
+# for key in request.keys():
+#     for item in request[key]:
+#         item.insert(-3,300)
+#         item.insert(-3,100)
+# pickle.dump(request,open(data_path + './output/multi_thread_order2.pickle', 'wb'))
+# for item in request:
+#     item.insert(-3,300)
 #
-print(request[0])
-
-# G = ox.graph_from_bbox(env_params['north_lat'], env_params['south_lat'], env_params['east_lng']
-                    #    , env_params['west_lng'], network_type='drive_service')
-# gdf_nodes, gdf_edges = ox.graph_to_gdfs(G)
-# lat_list = gdf_nodes['y'].tolist()
-# lng_list = gdf_nodes['x'].tolist()
-# node_id = gdf_nodes.index.tolist()
-# node_id_to_lat_lng = {}
-# node_coord_to_id = {}
-# for i in range(len(lat_list)):
-#     node_id_to_lat_lng[node_id[i]] = (lat_list[i], lng_list[i])
-#     node_coord_to_id[(lat_list[i], lng_list[i])] = node_id[i]
-
-# center = (
-# (env_params['east_lng'] + env_params['west_lng']) / 2, (env_params['north_lat'] + env_params['south_lat']) / 2)
-# radius = max(abs(env_params['east_lng'] - env_params['west_lng']) / 2,
-#              abs(env_params['north_lat'] - env_params['south_lat']) / 2)
-# side = 4
-# interval = 2 * radius / side
 
 
-# def solve( s: str, t: str) -> str:
-#         # write code here
-#         s_length,t_length = len(s), len(t)
-#         max_length = max(s_length,t_length)
-        
-#         result = ''
-#         flag = 0
-#         for i in range(max_length):
-            
-#             if i < s_length:
-#                 s_value = int(s[s_length - i - 1])
-#             else:
-#                 s_value = 0
-#             if i < t_length:
-#                 t_value = int(t[t_length - i - 1])
-#             else:
-#                 t_value = 0
-            
-
-#             result += str(int((s_value + t_value + flag) % 10))
-#             flag = int((s_value + t_value + flag) / 10)
-#         if flag:
-#             result += str(int(flag))
-#         return result[::-1]
-
-# print(solve("1258994789086810959258888307221656691275942378416703768","7007001981958278066472683068554254815482631701142544497"))
-# data = pd.DataFrame()
-# ori_lat_list = []
-# ori_lng_list = []
-# ori_node_list = []
-# dest_lat_list = []
-# dest_lng_list = []
-# dest_node_list = []
-# distance_list = []
-# time_list = []
-# for item in tqdm(request):
-#     ori_lat_list.append(item['origin_lat'])
-#     ori_lng_list.append(item['origin_lng'])
-#     ori_node_list.append(item['origin_grid'])
-#     dest_lat_list.append(item['dest_lat'])
-#     dest_lng_list.append(item['dest_lng'])
-#     dest_node_list.append(item['dest_grid'])
-#     distance_list.append(item['trip_time'])
-#     time_list.append(item['trip_distance'])
-# data['ori_node_id'] = ori_node_list
-# data['ori_lat'] = ori_lat_list
-# data['ori_lng'] = ori_lng_list
-# data['dest_node_id'] = dest_node_list
-# data['dest_lat'] = dest_lat_list
-# data['dest_lng'] = dest_lng_list
-# data['trip_distance'] = distance_list
-# data['start_time'] = time_list
-# data.to_csv('multi_thread.csv')
+#

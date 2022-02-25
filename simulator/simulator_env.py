@@ -8,6 +8,7 @@ from numpy.random import choice
 import timeit
 import time
 import math
+import  sys
 from utilities import *
 
 class Simulator:
@@ -76,7 +77,7 @@ class Simulator:
 
         # request tables
         self.request_columns = ['order_id', 'origin_id', 'origin_lat', 'origin_lng', 'dest_id','dest_lat', 'dest_lng','trip_distance','start_time','origin_grid_id','dest_grid_id',
-                                'itinerary_node_list', 'itinerary_segment_dis_list','trip_time', 'cancel_prob', 't_matched',
+                                'itinerary_node_list', 'itinerary_segment_dis_list','maximum_pickup_time_passenger_can_tolerate','maximum_price_passenger_can_tolerate','trip_time', 'cancel_prob', 't_matched',
                                 'pickup_time', 'wait_time', 't_end', 'status', 'driver_id', 'maximum_wait_time', 
                                 'pickup_distance']
                       
@@ -125,12 +126,18 @@ class Simulator:
             matched_itinerary_df['itinerary_node_list'] = matched_itinerary[0]
             matched_itinerary_df['itinerary_segment_dis_list'] = matched_itinerary[1]
             matched_itinerary_df['pickup_distance'] = matched_itinerary[2]
+
         matched_order_id_list = matched_pair_index_df['order_id'].values.tolist()
         con_matched = self.wait_requests['order_id'].isin(matched_order_id_list)
         con_keep_wait = self.wait_requests['wait_time'] <= self.wait_requests['maximum_wait_time']
 
+        # 'maximum_pickup_time_passenger_can_tolerate', 'maximum_price_passenger_can_tolerate'
+        matched_itinerary_df['pickup_time'] = matched_itinerary_df['pickup_distance'].values / env_params['vehicle_speed'] * 3600
+        matched_itinerary_df['delivery_time'] = matched_itinerary_df['pickup_distance'].values * env_params['price_per_km']
+
         # when the order is matched
         df_matched = self.wait_requests[con_matched].reset_index(drop=True)
+
         if df_matched.shape[0] > 0:
             idle_driver_table = self.driver_table[(self.driver_table['status'] == 0) | (self.driver_table['status'] == 4)]
             order_array = df_matched['order_id'].values
@@ -150,10 +157,15 @@ class Simulator:
 
             # passenger decide whether cancelled
             # 现在暂时不让其取消。需考虑时可用各订单的'cancel_prob'属性来计算
+            con_passenge_keep_wait = df_matched['maximum_pickup_time_passenger_can_tolerate'].values > \
+                                     matched_itinerary_df[
+                                         'pickup_time'].values
+            con_passenge_accept_price = df_matched[
+                                            'maximum_price_passenger_can_tolerate'].values >= matched_itinerary_df[
+                                            'delivery_time'].values
             passenger_cancel_prob = np.zeros(len(matched_pair_index_df))
-            prob_array = np.random.rand(len(passenger_cancel_prob))
-            con_passenger_remain = prob_array >= passenger_cancel_prob
-
+            # prob_array = np.random.rand(len(passenger_cancel_prob))
+            con_passenger_remain = con_passenge_keep_wait & con_passenge_accept_price
             con_remain = con_driver_remain & con_passenger_remain
 
             # order after cancelled
@@ -161,7 +173,7 @@ class Simulator:
 
             # driver after cancelled
             # 若匹配上后又被取消，目前假定司机按原计划继续cruising or repositioning
-            #self.driver_table.loc[cor_driver[~con_remain], ['status', 'remaining_time', 'total_idle_time']] = 0
+            self.driver_table.loc[cor_driver[~con_remain], ['status', 'remaining_time', 'total_idle_time']] = 0
 
             # order not cancelled
             new_matched_requests = df_matched[con_remain]
@@ -188,21 +200,21 @@ class Simulator:
                 (matched_itinerary_df[con_remain]['itinerary_segment_dis_list'] + new_matched_requests['itinerary_segment_dis_list']).values
             self.driver_table.loc[cor_driver[con_remain], 'remaining_time_for_current_node'] = \
                 matched_itinerary_df[con_remain]['itinerary_segment_dis_list'].map(lambda x: x[0]).values / self.vehicle_speed
-            # print(self.driver_table.loc[cor_driver[con_remain], 'itinerary_node_list'])
-            # print(len(self.driver_table.loc[cor_driver[con_remain], 'itinerary_node_list'].values.tolist()[0]))
-            # print(len(self.driver_table.loc[cor_driver[con_remain], 'itinerary_segment_dis_list'].values.tolist()[0]))
             # # update matched tracks for one time
             if self.track_recording_flag == True:
                 for i, index in enumerate(cor_driver[con_remain]):
-                    driver_id = self.driver_table.loc[index, 'driver_id']
-                    node_id_list = self.driver_table.loc[index, 'itinerary_node_list']
-                    lng_array, lat_array, grid_id_array = self.RN.get_information_for_nodes(node_id_list)
-                    time_array = np.cumsum(self.driver_table.loc[index, 'itinerary_segment_dis_list']) / self.vehicle_speed
-                    time_array = np.concatenate([np.array([self.time]), self.time + time_array[:-1]])
-                    delivery_time = len(new_matched_requests['itinerary_node_list'][i])
-                    pickup_time = len(time_array) - delivery_time
-                    task_type_array = np.concatenate([2 + np.zeros(pickup_time), 1 + np.zeros(delivery_time)])
-                    self.new_tracks[driver_id] = np.vstack([lat_array, lng_array,np.array(node_id_list),grid_id_array,task_type_array, time_array]).T.tolist()
+                    try:
+                        driver_id = self.driver_table.loc[index, 'driver_id']
+                        node_id_list = self.driver_table.loc[index, 'itinerary_node_list']
+                        lng_array, lat_array, grid_id_array = self.RN.get_information_for_nodes(node_id_list)
+                        time_array = np.cumsum(self.driver_table.loc[index, 'itinerary_segment_dis_list']) / self.vehicle_speed
+                        time_array = np.concatenate([np.array([self.time]), self.time + time_array[:-1]])
+                        delivery_time = len(new_matched_requests['itinerary_node_list'][i])
+                        pickup_time = len(time_array) - delivery_time
+                        task_type_array = np.concatenate([2 + np.zeros(pickup_time), 1 + np.zeros(delivery_time)])
+                        self.new_tracks[driver_id] = np.vstack([lat_array, lng_array,np.array(node_id_list),grid_id_array,task_type_array, time_array]).T.tolist()
+                    except:
+                        print("time " + str(i) + " loss")
         # when the order is not matched
         update_wait_requests = pd.concat([update_wait_requests, self.wait_requests[~con_matched & con_keep_wait]],axis=0)
 
@@ -220,6 +232,8 @@ class Simulator:
            sampled_requests = []
            count_interval = int(math.floor(self.time / self.request_interval))
         #    print("test",str(count_interval * self.request_interval))
+           if count_interval * self.request_interval not in self.request_databases.keys():
+               return
            self.request_database = self.request_databases[count_interval * self.request_interval]
            database_size = len(self.request_database)
 
@@ -239,7 +253,7 @@ class Simulator:
            column_name = ['order_id', 'origin_id','origin_lat', 'origin_lng','dest_id',
        'dest_lat', 'dest_lng', 'trip_distance', 'start_time',
        'origin_grid_id', 'dest_grid_id', 'itinerary_node_list','itinerary_segment_dis_list',
-        'trip_time','designed_reward', 'cancel_prob']
+        'maximum_pickup_time_passenger_can_tolerate','maximum_price_passenger_can_tolerate','trip_time','designed_reward', 'cancel_prob']
                          
 
         #                         'wait_time','status','maximum_wait_time','pickup_distance','pickup_time', 'driver_id',  't_matched'
@@ -291,7 +305,6 @@ class Simulator:
         # reposition decision
         # total_idle_time 为reposition间的间隔， time to last cruising 为cruising间的间隔。
         if self.reposition_flag == True:
-            print("reposition")
             # print("total_idle_time",self.driver_table['total_idle_time'])
             con_eligibe = (self.driver_table['total_idle_time'] > self.eligible_time_for_reposition) & \
                           (self.driver_table['status'] == 0)
@@ -498,38 +511,30 @@ class Simulator:
         wait_requests = deepcopy(self.wait_requests)
         driver_table = deepcopy(self.driver_table)
         matched_pair_actual_indexes, matched_itinerary = order_dispatch(wait_requests, driver_table, self.maximal_pickup_distance, self.dispatch_method)
-        print('step1 finished')
         # Step 2: driver/passenger reaction after dispatching
         df_new_matched_requests, df_update_wait_requests = self.update_info_after_matching_multi_process(matched_pair_actual_indexes, matched_itinerary)
         self.matched_requests = pd.concat([self.matched_requests, df_new_matched_requests], axis=0)
         self.matched_requests = self.matched_requests.reset_index(drop=True)
         self.wait_requests = df_update_wait_requests.reset_index(drop=True)
-        print('step2 finished')
 
         # Step 3: bootstrap new orders
         self.order_generation()
-        print('step3 finished')
 
         # Step 4: cruising and/or repositioning decision
         self.cruise_and_reposition()
-        print('step4 finished')
 
         # Step 4.1: track recording
         if self.track_recording_flag == True:
             self.real_time_track_recording()
 
-        print('step4.1 finished')
 
         # Step 5: update next state for drivers
         self.update_state()
-        print('step5 finished')
 
         # Step 6： online/offline update()
         self.driver_online_offline_update()
-        print('step6 finished')
 
         # Step 7: update time
         self.update_time()
-        print('step7 finished')
 
         return self.new_tracks
