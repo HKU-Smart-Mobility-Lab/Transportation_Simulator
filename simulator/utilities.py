@@ -149,7 +149,7 @@ def route_generation_array(origin_coord_array, dest_coord_array, mode='complete'
         # 返回完整itinerary
         for origin,dest in zip(origin_node_list,dest_node_list):
             ite = ox.shortest_path(G, origin, dest, weight='length', cpus=1)
-            if ite is not None or len(ite) > 1 :
+            if ite is not None and len(ite) > 1 :
                 itinerary_node_list.append(ite)
             else:
                 itinerary_node_list.append([origin,dest])
@@ -201,7 +201,7 @@ def route_generation_array(origin_coord_array, dest_coord_array, mode='complete'
         # dis_array = np.array(dis_array)
         for origin,dest in zip(origin_node_list, dest_node_list):
             ite = ox.distance.shortest_path(G, origin, dest, weight='length', cpus=16)
-            if ite is not None or len(ite) > 1:
+            if ite is not None and len(ite) > 1:
                 itinerary_node_list.append(ite)
             else:
                 itinerary_node_list.append([origin,dest])
