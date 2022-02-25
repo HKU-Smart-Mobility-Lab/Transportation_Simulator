@@ -29,6 +29,7 @@ env_params = {
 'experiment_mode' : 'test',
 'driver_num':1000,
 'side':4,
+'price_per_km':5,
 'road_information_mode':'load',
 'north_lat': 40.8845,
 'south_lat': 40.6968,
