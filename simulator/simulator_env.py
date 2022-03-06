@@ -133,7 +133,7 @@ class Simulator:
 
         # 'maximum_pickup_time_passenger_can_tolerate', 'maximum_price_passenger_can_tolerate'
         matched_itinerary_df['pickup_time'] = matched_itinerary_df['pickup_distance'].values / env_params['vehicle_speed'] * 3600
-        matched_itinerary_df['delivery_time'] = matched_itinerary_df['pickup_distance'].values * env_params['price_per_km']
+        matched_itinerary_df['delivery_price'] = matched_itinerary_df['pickup_distance'].values * env_params['price_per_km']
 
         # when the order is matched
         df_matched = self.wait_requests[con_matched].reset_index(drop=True)
@@ -162,11 +162,11 @@ class Simulator:
                                          'pickup_time'].values
             con_passenge_accept_price = df_matched[
                                             'maximum_price_passenger_can_tolerate'].values >= matched_itinerary_df[
-                                            'delivery_time'].values
-            passenger_cancel_prob = np.zeros(len(matched_pair_index_df))
+                                            'delivery_price'].values
+            # passenger_cancel_prob = np.zeros(len(matched_pair_index_df))
             # prob_array = np.random.rand(len(passenger_cancel_prob))
-            # con_passenger_remain = con_passenge_keep_wait & con_passenge_accept_price
-            con_remain = con_driver_remain #& con_passenger_remain
+            con_passenger_remain = con_passenge_keep_wait & con_passenge_accept_price
+            con_remain = con_driver_remain & con_passenger_remain
 
             # order after cancelled
             update_wait_requests = df_matched[~con_remain]
