@@ -165,8 +165,8 @@ class Simulator:
                                             'delivery_time'].values
             passenger_cancel_prob = np.zeros(len(matched_pair_index_df))
             # prob_array = np.random.rand(len(passenger_cancel_prob))
-            con_passenger_remain = con_passenge_keep_wait & con_passenge_accept_price
-            con_remain = con_driver_remain & con_passenger_remain
+            # con_passenger_remain = con_passenge_keep_wait & con_passenge_accept_price
+            con_remain = con_driver_remain #& con_passenger_remain
 
             # order after cancelled
             update_wait_requests = df_matched[~con_remain]
@@ -369,7 +369,7 @@ class Simulator:
                         grid_list.append(result[result['node_id'] == id ]['grid_id'].tolist()[0])
         real_time_driver_table['node_id'] = node_list
         real_time_driver_table['grid_id'] = grid_list
-        real_time_driver_table = real_time_driver_table[['driver_id','lat','lng','node_id','grid_id','time','status']]
+        real_time_driver_table = real_time_driver_table[['driver_id','lat','lng','node_id','grid_id','status','time']]
         # print("columns",real_time_driver_table)
         real_time_tracks = real_time_driver_table.set_index('driver_id').T.to_dict('list')
         self.new_tracks = {**self.new_tracks, **real_time_tracks}
