@@ -31,6 +31,10 @@ class SimulatorPattern(object):
             self.request_all = pickle.load(open(data_path + self.request_file_name + '.pickle', 'rb'))
             # print(self.request_all)
             self.driver_info = pickle.load(open(data_path + self.driver_file_name + '.pickle', 'rb'))
+            columns = self.driver_info.columns
+            self.driver_info = np.repeat(self.driver_info.values,2,axis=0)
+
+            self.driver_info = pd.DataFrame(self.driver_info,columns=columns)
             self.driver_info = self.driver_info.sample(n=env_params['driver_num'])
             # print(self.driver_info)
 

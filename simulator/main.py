@@ -22,7 +22,7 @@ if __name__ == "__main__":
             print("step: ",step)
             new_tracks = simulator.step()
             track_record.append(new_tracks)
-    pickle.dump(track_record, open(data_path + 'toy_records' + '.pickle', 'wb'))
+    pickle.dump(track_record, open(data_path + 'toy_records_no_price_500' + '.pickle', 'wb'))
 
 
 

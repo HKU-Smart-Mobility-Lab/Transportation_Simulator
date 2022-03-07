@@ -1,7 +1,7 @@
 from simulator_pattern import *
 from utilities import *
 np.warnings.filterwarnings('ignore', category=np.VisibleDeprecationWarning)
-
+import sys
 
 class Simulator:
     def __init__(self, **kwargs):
@@ -162,7 +162,7 @@ class Simulator:
                                                         matched_itinerary_df['delivery_price'].values
 
             con_passenger_remain = con_passenge_keep_wait & con_passenge_accept_price
-            con_remain = con_driver_remain & con_passenger_remain
+            con_remain = con_driver_remain #& con_passenger_remain
 
             # order after cancelled
             update_wait_requests = df_matched[~con_remain]
@@ -179,6 +179,7 @@ class Simulator:
             new_matched_requests['t_end'] = self.time + new_matched_requests['pickup_time'].values + new_matched_requests['trip_time'].values
             new_matched_requests['status'] = 1
             new_matched_requests['driver_id'] = matched_pair_index_df[con_remain]['driver_id'].values
+
 
             # driver not cancelled
             self.driver_table.loc[cor_driver[con_remain], 'status'] = 2
@@ -210,11 +211,15 @@ class Simulator:
                         delivery_time = len(new_matched_requests['itinerary_node_list'][j])
                         pickup_time = len(time_array) - delivery_time
                         task_type_array = np.concatenate([2 + np.zeros(pickup_time), 1 + np.zeros(delivery_time)])
-                        self.new_tracks[driver_id] = np.vstack([lat_array, lng_array,np.array(node_id_list),grid_id_array,task_type_array, time_array]).T.tolist()
+                        order_id = self.driver_table.loc[index, 'matched_order_id']
+
+                        self.new_tracks[driver_id] = np.vstack(
+                            [lat_array, lng_array,np.array([order_id] * len(lat_array)), np.array(node_id_list), grid_id_array, task_type_array,
+                             time_array]).T.tolist()
                     except Exception as e:
                         print(e)
                         print("time " + str(j) + " loss")
-        # when the order is not matched, update wait requests
+
         update_wait_requests = pd.concat([update_wait_requests, self.wait_requests[~con_matched & con_keep_wait]],axis=0)
 
         return new_matched_requests, update_wait_requests

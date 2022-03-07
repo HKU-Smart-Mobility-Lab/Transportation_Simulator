@@ -2,7 +2,7 @@ env_params = {
 't_initial' :0,
 't_end' : 86400,
 'delta_t' : 1,
-'vehicle_speed' : 6.33,
+'vehicle_speed' : 63.3,
 'repo_speed' : 1, #目前的设定需要与vehicl speed保持一致
 'order_sample_ratio' : 1,
 'order_generation_mode' : 'sample_from_base',
@@ -27,7 +27,7 @@ env_params = {
 'method': 'instant_reward_no_subway',
 'simulator_mode' : 'toy_mode',
 'experiment_mode' : 'test',
-'driver_num':1000,
+'driver_num':500,
 'side':4,
 'price_per_km':5,
 'road_information_mode':'load',
