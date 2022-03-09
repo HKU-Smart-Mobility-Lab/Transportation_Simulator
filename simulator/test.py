@@ -7,6 +7,7 @@ import osmnx as ox
 import time
 from tqdm import tqdm
 import sys
+from math import radians, sin, atan2
 # from utilities import *
 # records = pickle.load(open('driver_info' + '.pickle', 'rb'))
 # zone_info = pickle.load(open(data_path + 'zone_info.pickle', 'rb'))
@@ -16,13 +17,8 @@ import sys
 # request = pickle.load(open(data_path + 'requests_test.pickle', 'rb'))
 
 # print(request[0])
-a = pd.DataFrame()
-a['a'] = [1,2,3]
-a['b'] = [2,3,4]
 
-con = a.a < a.b
-print(con.values.tolist())
-# data = pickle.load(open('dataset.pickle','rb'))
+# data = pickle.load(open('./statistic/records.pickle','rb'))
 
 # for key in request.keys():
 #     for item in request[key]:
@@ -43,5 +39,12 @@ print(con.values.tolist())
 #     item.insert(-3,300)
 #
 
+# a = pd.DataFrame()
+# a['a'] = [1,2,3]
+# a['b'] = [2,5,4]
+# print(a[a['a'] * 2 < a['b']])
+# a=np.random.normal(5,1,4)
+# print(a)
+records = pickle.load(open('dataset.pickle','rb'))
 
 #
