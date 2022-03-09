@@ -14,26 +14,9 @@ from tqdm import tqdm
 import pandas as pd
 import sys
 from collections import Counter
-# G = ox.graph_from_bbox(env_params['north_lat'], env_params['south_lat'], env_params['east_lng']
-#                        , env_params['west_lng'], network_type='drive')
-
-# ox.save_graphml(G,'./input/graph.graphml')
+import time
 
 G = ox.load_graphml('./input/graph.graphml')
-# def get_nodeId_from_coordinate(lat, lng):
-#     node_list = []
-#     for i in range(len(lat)):
-#         x = node_coord_to_id[(lat[i],lng[i])]
-#         node_list.append(x)
-#     return node_list
-# gdf_nodes, gdf_edges = ox.graph_to_gdfs(G)
-# lat_list = gdf_nodes['y'].tolist()
-# lng_list = gdf_nodes['x'].tolist()
-# node_id = gdf_nodes.index.tolist()
-#
-
-import time
-t = time.time()
 gdf_nodes, gdf_edges = ox.graph_to_gdfs(G)
 lat_list = gdf_nodes['y'].tolist()
 lng_list = gdf_nodes['x'].tolist()
@@ -51,12 +34,19 @@ radius = max(abs(env_params['east_lng'] - env_params['west_lng']) / 2,
 side = 4
 interval = 2 * radius / side
 
-# print(time.time()-t)
    
 
 
 # define the function to get zone_id of segment node
 def get_zone(lat, lng):
+    """
+    :param lat: the latitude of coordinate
+    :type : float
+    :param lng:
+    :type lng:
+    :return:
+    :rtype:
+    """
     if lat < center[1]:
         i = math.floor(side / 2) - math.ceil((center[1] - lat) / interval) + side % 2
     else:
