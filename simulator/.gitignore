@@ -1,7 +1,7 @@
 __pycache__/
 ../static/
-output/
-input/
+#output/
+#input/
 statistic/
 static/
 cache/

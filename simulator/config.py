@@ -1,8 +1,8 @@
 env_params = {
 't_initial' :36000,
 't_end' : 36100,
-'delta_t' : 1,  # s
-'vehicle_speed' : 63.3,   # km / h
+'delta_t' : 5,  # s
+'vehicle_speed' : 22.68,   # km / h
 'repo_speed' : 1, #目前的设定需要与vehicl speed保持一致
 'order_sample_ratio' : 1,
 'order_generation_mode' : 'sample_from_base',
@@ -14,7 +14,7 @@ env_params = {
 "maximum_price_passenger_can_tolerate_mean":150, # ￥
 "maximum_price_passenger_can_tolerate_std":50,  # ￥
 'maximal_pickup_distance' : 20,  # km
-'request_interval': 1,  # s
+'request_interval': 5,  # s
 'cruise_flag' : False,
 'max_idle_time' : 1,
 'cruise_mode': 'random',
