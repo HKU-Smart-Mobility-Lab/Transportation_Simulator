@@ -4,11 +4,12 @@ from tqdm import tqdm
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
+from config import *
 
 # records = pickle.load(open("./output/multi_thread_order.pickle",'rb'))
-order = pickle.load(open("dataset.pickle",'rb'))
-data = pd.read_csv("multi_thread.csv")
-records = pickle.load(open("statistic/toy_records_no_price_500.pickle",'rb'))
+order = pickle.load(open("input/dataset.pickle",'rb'))
+data = pd.read_csv("input/multi_thread.csv")
+records = pickle.load(open("toy_records_price_limitation.pickle",'rb'))
 
 
 # for item in tqdm(records):
@@ -21,7 +22,7 @@ def get_matching_rate(records,order):
     total_num = 0
     matched_num = 0
     # calculate the number of orders
-    for time in range(36000,79200 + 1,60):
+    for time in range(env_params['t_initial'],env_params['t_end']):
         if time in order.keys():
             total_num += len(order[time])
     # calculate the number of orders that are matched
@@ -90,8 +91,8 @@ print("司机接单率",get_driver_pickup_ratio(records,36000,79200,500))
 
 
 def plot_figure():
-    start_time = 36000
-    end_time = 79200
+    start_time = env_params['t_initial']
+    end_time = env_params['t_end']
     driver_num = [500,1000,1500]
     matching_rate = []
     pre_matching_waiting_time = []
@@ -125,4 +126,4 @@ def plot_figure():
     plt.ylabel("driver_pickup_rate")
     plt.plot(driver_num, driver_pickup_rate)
     plt.show()
-plot_figure()
+# plot_figure()
