@@ -189,7 +189,8 @@ class Simulator:
             self.driver_table.loc[cor_driver[con_remain], 'time_to_last_cruising'] = 0
             self.driver_table.loc[cor_driver[con_remain], 'current_road_node_index'] = 0
             self.driver_table.loc[cor_driver[con_remain], 'itinerary_node_list'] = \
-                (matched_itinerary_df[con_remain]['itinerary_node_list'] + new_matched_requests['itinerary_node_list']).values
+                    (matched_itinerary_df[con_remain]['itinerary_node_list'] + new_matched_requests['itinerary_node_list']).values
+
             self.driver_table.loc[cor_driver[con_remain], 'itinerary_segment_dis_list'] = \
                 (matched_itinerary_df[con_remain]['itinerary_segment_dis_list'] + new_matched_requests['itinerary_segment_dis_list']).values
             self.driver_table.loc[cor_driver[con_remain], 'remaining_time_for_current_node'] = \
@@ -229,13 +230,17 @@ class Simulator:
         if self.order_generation_mode == 'sample_from_base':
             # directly sample orders from the historical order database
             sampled_requests = []
-            count_interval = int(math.floor(self.time / self.request_interval))
-            # judge whether this time has orders
-            if count_interval * self.request_interval not in self.request_databases.keys():
-                return
-            self.request_database = self.request_databases[count_interval * self.request_interval]
-            database_size = len(self.request_database)
+            min_time = max(env_params['t_initial'],self.time - self.request_interval + 1)
+            for time in range(min_time,self.time):
+                if time not in self.request_databases.keys():
+                    return
+                if time == min_time:
+                    self.request_database = self.request_databases[time]
+                else:
+                    self.request_database += self.request_databases[time]
 
+            if self.request_database is None or len(self.request_database) == 0:return
+            database_size = len(self.request_database)
             # sample a portion of historical orders
             num_request = int(np.rint(self.order_sample_ratio * database_size))
             if num_request <= database_size:
