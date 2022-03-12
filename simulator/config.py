@@ -13,7 +13,7 @@ env_params = {
 "maximum_pickup_time_passenger_can_tolerate_std":200, # s
 "maximum_price_passenger_can_tolerate_mean":150, # ￥
 "maximum_price_passenger_can_tolerate_std":50,  # ￥
-'maximal_pickup_distance' : 20,  # km
+'maximal_pickup_distance' : 1,  # km
 'request_interval': 5,  # s
 'cruise_flag' : False,
 'max_idle_time' : 1,

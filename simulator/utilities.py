@@ -14,6 +14,7 @@ from tqdm import tqdm
 import pandas as pd
 import sys
 from collections import Counter
+import pymongo
 import time
 
 G = ox.load_graphml('./input/graph.graphml')
@@ -34,8 +35,11 @@ radius = max(abs(env_params['east_lng'] - env_params['west_lng']) / 2,
 side = 4
 interval = 2 * radius / side
 
+# database
+myclient = pymongo.MongoClient("mongodb://localhost:27017/")
+mydb = myclient["route_network"]
    
-
+mycollect = mydb['route_list']
 
 # define the function to get zone_id of segment node
 def get_zone(lat, lng):
@@ -138,8 +142,16 @@ def route_generation_array(origin_coord_array, dest_coord_array, mode='complete'
     if mode == 'complete':
         # 返回完整itinerary
         for origin,dest in zip(origin_node_list,dest_node_list):
-            ite = ox.shortest_path(G, origin, dest, weight='length', cpus=1)
-            if ite is not None and len(ite) > 1 :
+            for origin, dest in zip(origin_node_list, dest_node_list):
+                data = {
+                    'node': str(origin) + str(dest)
+                }
+                re = mycollect.find_one(data)['itinerary_node_list']
+                if re:
+                    ite = re
+                else:
+                    ite = ox.distance.shortest_path(G, origin, dest, weight='length', cpus=16)
+                if ite is not None and len(ite) > 1:
                 itinerary_node_list.append(ite)
             else:
                 itinerary_node_list.append([origin,dest])
@@ -190,7 +202,14 @@ def route_generation_array(origin_coord_array, dest_coord_array, mode='complete'
         # dis_array.append(dis)
         # dis_array = np.array(dis_array)
         for origin,dest in zip(origin_node_list, dest_node_list):
-            ite = ox.distance.shortest_path(G, origin, dest, weight='length', cpus=16)
+            data = {
+                'node': str(origin)+str(dest)
+            }
+            re = mycollect.find_one(data)['itinerary_node_list']
+            if re:
+                ite = re
+            else:
+                ite = ox.distance.shortest_path(G, origin, dest, weight='length', cpus=16)
             if ite is not None and len(ite) > 1:
                 itinerary_node_list.append(ite)
             else:
