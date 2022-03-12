@@ -40,11 +40,45 @@ from math import radians, sin, atan2
 #
 
 # a = pd.DataFrame()
-# a['a'] = [1,2,3]
+# b = pd.DataFrame()
+# a['a'] = [[1],2,3]
 # a['b'] = [2,5,4]
-# print(a[a['a'] * 2 < a['b']])
-# a=np.random.normal(5,1,4)
+# b['a'] = [2,[4],5,6]
+# b['b'] = [1,3,4,8]
+# remain = [False,True,True,True]
+# b = b[remain]
 # print(a)
-records = pickle.load(open('dataset.pickle','rb'))
+# print(b)
+# a['b'] = a['a'].values+b['a'].values
+# a['b'] = (a['a']+b['a'])
+# print(a['b'])
+#
+#
+# sys.exit()
 
+
+# data = pickle.load(open('./input/dataset.pickle','rb'))
+# test = set()
+# for time in data.keys():
+#     for order in data[time]:
+#         print(order)
+#         if order[0] in test:
+#             print(order)
+#         test.add(order[0])
+# print(len(test))
+# print(len(data))
+count = 0
+orders = pickle.load(open('./input/dataset.pickle','rb'))
+for time in range(36000, 36500, 5):
+    if time in orders.keys():
+        count += len(orders[time])
+records = pickle.load(open('./toy_records_price.pickle','rb'))
+matched = 0
+print(count)
+for time in records:
+    for driver in time:
+        if isinstance(time[driver][0], list):
+            matched += 1
+print(matched)
+print(matched/count)
 #

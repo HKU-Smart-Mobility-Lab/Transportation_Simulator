@@ -1,6 +1,6 @@
 env_params = {
 't_initial' :36000,
-'t_end' : 36100,
+'t_end' : 79200,
 'delta_t' : 5,  # s
 'vehicle_speed' : 22.68,   # km / h
 'repo_speed' : 1, #目前的设定需要与vehicl speed保持一致
@@ -24,7 +24,7 @@ env_params = {
 'track_recording_flag' : True,
 'driver_far_matching_cancel_prob_file' : 'driver_far_matching_cancel_prob',
 'input_file_path':'input/dataset.csv',
-'request_file_name' : 'dataset', #'toy_requests',
+'request_file_name' : 'input/dataset', #'toy_requests',
 'driver_file_name' : 'driver_info',
 'road_network_file_name' : 'road_network_information.pickle',
 'dispatch_method': 'LD', #LD: lagarange decomposition method designed by Peibo Duan
