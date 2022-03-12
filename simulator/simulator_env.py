@@ -170,7 +170,7 @@ class Simulator:
             new_matched_requests = df_matched[con_remain]
             new_matched_requests['t_matched'] = self.time
             new_matched_requests['pickup_distance'] = matched_itinerary_df[con_remain]['pickup_distance'].values
-            # new_matched_requests['pickup_time'] = new_matched_requests['pickup_distance'].values / self.vehicle_speed * 3600
+            new_matched_requests['pickup_time'] = new_matched_requests['pickup_distance'].values / self.vehicle_speed * 3600
             new_matched_requests['t_end'] = self.time + new_matched_requests['pickup_time'].values + new_matched_requests['trip_time'].values
             new_matched_requests['status'] = 1
             new_matched_requests['driver_id'] = matched_pair_index_df[con_remain]['driver_id'].values

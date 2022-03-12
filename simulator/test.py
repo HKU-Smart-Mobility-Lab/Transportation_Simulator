@@ -49,7 +49,7 @@ from math import radians, sin, atan2
 # b = b[remain]
 # print(a)
 # print(b)
-# a['b'] = a['a'].values+b['a'].values
+# a['b'] = a['a'].values+b['c'].values
 # a['b'] = (a['a']+b['a'])
 # print(a['b'])
 #
@@ -69,7 +69,7 @@ from math import radians, sin, atan2
 # print(len(data))
 count = 0
 orders = pickle.load(open('./input/dataset.pickle','rb'))
-for time in range(36000, 36500, 5):
+for time in range(36000, 79200, 5):
     if time in orders.keys():
         count += len(orders[time])
 records = pickle.load(open('./toy_records_price.pickle','rb'))
