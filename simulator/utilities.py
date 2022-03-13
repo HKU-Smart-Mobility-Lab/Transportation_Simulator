@@ -139,19 +139,26 @@ def route_generation_array(origin_coord_array, dest_coord_array, mode='complete'
     itinerary_node_list = []
     itinerary_segment_dis_list = []
     dis_array = []
+    if mode == 'test':
+        for origin, dest in zip(origin_node_list, dest_node_list):
+            itinerary_node_list.append([origin])
+            dis = distance(node_id_to_lat_lng[origin], node_id_to_lat_lng[dest])
+            itinerary_segment_dis_list.append([dis])
+            dis_array.append(dis)
+        return itinerary_node_list, itinerary_segment_dis_list, dis_array
+
     if mode == 'complete':
         # 返回完整itinerary
         for origin,dest in zip(origin_node_list,dest_node_list):
-            for origin, dest in zip(origin_node_list, dest_node_list):
-                data = {
-                    'node': str(origin) + str(dest)
-                }
-                re = mycollect.find_one(data)['itinerary_node_list']
-                if re:
-                    ite = re
-                else:
-                    ite = ox.distance.shortest_path(G, origin, dest, weight='length', cpus=16)
-                if ite is not None and len(ite) > 1:
+            data = {
+                'node': str(origin) + str(dest)
+            }
+            re = mycollect.find_one(data)['itinerary_node_list']
+            if re:
+                ite = re
+            else:
+                ite = ox.distance.shortest_path(G, origin, dest, weight='length', cpus=16)
+            if ite is not None and len(ite) > 1:
                 itinerary_node_list.append(ite)
             else:
                 itinerary_node_list.append([origin,dest])
@@ -202,14 +209,14 @@ def route_generation_array(origin_coord_array, dest_coord_array, mode='complete'
         # dis_array.append(dis)
         # dis_array = np.array(dis_array)
         for origin,dest in zip(origin_node_list, dest_node_list):
-            data = {
-                'node': str(origin)+str(dest)
-            }
-            re = mycollect.find_one(data)['itinerary_node_list']
-            if re:
-                ite = re
-            else:
-                ite = ox.distance.shortest_path(G, origin, dest, weight='length', cpus=16)
+            # data = {
+            #     'node': str(origin)+str(dest)
+            # }
+            # re = mycollect.find_one(data)['itinerary_node_list']
+            # if re:
+            #     ite = re
+            # else:
+            ite = ox.distance.shortest_path(G, origin, dest, weight='length', cpus=16)
             if ite is not None and len(ite) > 1:
                 itinerary_node_list.append(ite)
             else:
@@ -440,7 +447,7 @@ def order_dispatch(wait_requests, driver_table, maximal_pickup_distance=950, dis
                 request_array_new = request_array[indexs,:2]
                 driver_loc_array_new = driver_loc_array[indexs,:2]
                 itinerary_node_list, itinerary_segment_dis_list, _ = route_generation_array(
-                    driver_loc_array_new, request_array_new, mode='drop_end')
+                    driver_loc_array_new, request_array_new, mode='test')
                 itinerary_node_list_new = []
                 itinerary_segment_dis_list_new = []
                 dis_array_new = []
@@ -449,6 +456,7 @@ def order_dispatch(wait_requests, driver_table, maximal_pickup_distance=950, dis
                 #     itinerary_node_list_new.append(itinerary_node_list[index])
                 #     itinerary_segment_dis_list_new.append(itinerary_segment_dis_list[index])
                 #     dis_array_new.append(dis_array[index])
+
                 matched_itinerary = [itinerary_node_list, itinerary_segment_dis_list, dis_array[indexs,]]
 
     return matched_pair_actual_indexs, np.array(matched_itinerary)
