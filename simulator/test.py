@@ -67,10 +67,19 @@ from math import radians, sin, atan2
 #         test.add(order[0])
 # print(len(test))
 # print(len(data))
+from utilities import *
 count = 0
 orders = pickle.load(open('./input/dataset.pickle','rb'))
-for time in range(36000, 79200, 5):
+for time in range(36000, 37500, 5):
     if time in orders.keys():
+        for order in orders[time]:
+            if order[0] == 28295:
+                itinerary_segment_dis = []
+                itinerary_node = order[11]
+                for i in range(len(itinerary_node) - 1):
+                    dis = distance(node_id_to_lat_lng[itinerary_node[i]], node_id_to_lat_lng[itinerary_node[i + 1]])
+                    itinerary_segment_dis.append(dis)
+                print(np.sum(itinerary_segment_dis))
         count += len(orders[time])
 records = pickle.load(open('./toy_records_price.pickle','rb'))
 matched = 0
@@ -81,4 +90,4 @@ for time in records:
             matched += 1
 print(matched)
 print(matched/count)
-#
+
