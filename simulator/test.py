@@ -19,7 +19,10 @@ def calculate_match_rate():
 
 
 def delete_none_order():
-    data = pickle.load(open('./output/multi_thread_order.pickle', 'rb'))
+    data = pickle.load(open('./input/order.pickle', 'rb'))
+    data2 = pickle.load(open('./input/dataset.pickle', 'rb'))
+    print(data[1][1])
+    print(data2[1][0])
     for time in data.keys():
         for order in data[time]:
             if order[11] is None or len(order[11]) == 1:
@@ -27,7 +30,7 @@ def delete_none_order():
 
     for time in data.keys():
         for order in data[time]:
-            if order[11] == [] or len(order[11]) == 1:
+            if order[11] is None or len(order[11]) == 1:
                 print(order)
 
     pickle.dump(data, open('./input/order.pickle', 'wb'))

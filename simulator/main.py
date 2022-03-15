@@ -24,7 +24,7 @@ if __name__ == "__main__":
 
     # pickle.dump(track_record, open(data_path + 'toy_records_no_price_500' + '.pickle', 'wb'))
 
-    pickle.dump(track_record, open(data_path + 'toy_records_price' + '.pickle', 'wb'))
+    pickle.dump(track_record, open('./output/records_driver_num_500' + '.pickle', 'wb'))
 
 
 

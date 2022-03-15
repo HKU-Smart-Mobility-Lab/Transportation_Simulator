@@ -386,7 +386,7 @@ class Simulator:
         real_time_driver_table['grid_id'] = grid_list
         real_time_driver_table = real_time_driver_table[['driver_id','lat','lng','node_id','grid_id','status','time']]
         real_time_tracks = real_time_driver_table.set_index('driver_id').T.to_dict('list')
-        # self.new_tracks = {**self.new_tracks, **real_time_tracks}
+        self.new_tracks = {**self.new_tracks, **real_time_tracks}
 
     def update_state(self):
         """
