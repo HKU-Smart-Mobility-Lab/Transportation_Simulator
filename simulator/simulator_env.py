@@ -197,7 +197,6 @@ class Simulator:
                 (matched_itinerary_df[con_remain]['itinerary_segment_dis_list'] + new_matched_requests['itinerary_segment_dis_list']).values
             self.driver_table.loc[cor_driver[con_remain], 'remaining_time_for_current_node'] = \
                 matched_itinerary_df[con_remain]['itinerary_segment_dis_list'].map(lambda x: x[0]).values / self.vehicle_speed * 3600
-            print(self.driver_table.loc[cor_driver[con_remain], 'remaining_time_for_current_node'])
             # update matched tracks for one time
 
             if self.track_recording_flag:
@@ -230,14 +229,14 @@ class Simulator:
             # directly sample orders from the historical order database
             sampled_requests = []
             temp_request = []
-            # min_time = max(env_params['t_initial'], self.time - self.request_interval + 1)
-            # for time in range(min_time, self.time):
-            #     if time not in self.request_databases.keys():
-            #         continue
-            #     elif time in self.request_databases.keys():
-            #         temp_request.extend(self.request_databases[time])
-            if self.time in self.request_databases.keys():
-                temp_request = self.request_databases[self.time]
+            min_time = max(env_params['t_initial'], self.time - self.request_interval + 1)
+            for time in range(min_time, self.time):
+                if time not in self.request_databases.keys():
+                    continue
+                elif time in self.request_databases.keys():
+                    temp_request.extend(self.request_databases[time])
+            # if self.time in self.request_databases.keys():
+            #     temp_request = self.request_databases[self.time]
             if temp_request == []:
                 return
             database_size = len(temp_request)
@@ -277,8 +276,6 @@ class Simulator:
                 #     itinerary_node_list[j].pop()
 
                 wait_info = pd.DataFrame(sampled_requests, columns=column_name)
-                print(itinerary_node_list)
-                print(itinerary_segment_dis_list)
                 wait_info['itinerary_node_list'] = itinerary_node_list
                 wait_info['start_time'] = self.time
                 wait_info['wait_time'] = 0
@@ -488,8 +485,6 @@ class Simulator:
         self.driver_table.loc[delivery_not_finished_driver_index, 'status'] = 1
         self.driver_table.loc[delivery_not_finished_driver_index, 'remaining_time'] = remaining_time_array[remaining_time_array > 0]
 
-        print(self.driver_table.loc[32])
-
         if len(delivery_finished_driver_index > 0):
             self.driver_table.loc[delivery_finished_driver_index, 'lng'] = \
                 self.driver_table.loc[delivery_finished_driver_index, 'target_loc_lng'].values
@@ -540,9 +535,6 @@ class Simulator:
         wait_requests = deepcopy(self.wait_requests)
         driver_table = deepcopy(self.driver_table)
         matched_pair_actual_indexes, matched_itinerary = order_dispatch(wait_requests, driver_table, self.maximal_pickup_distance, self.dispatch_method)
-        if len(matched_pair_actual_indexes) != 0:
-            print(matched_pair_actual_indexes)
-            print(matched_itinerary)
 
         # Step 2: driver/passenger reaction after dispatching
         df_new_matched_requests, df_update_wait_requests = self.update_info_after_matching_multi_process(matched_pair_actual_indexes, matched_itinerary)
