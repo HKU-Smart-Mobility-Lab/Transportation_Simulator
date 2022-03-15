@@ -442,12 +442,12 @@ def order_dispatch(wait_requests, driver_table, maximal_pickup_distance=950, dis
                 order_driver_pair = np.vstack(
                     [request_array[flag, 2], driver_loc_array[flag, 2], request_array[flag, 3], dis_array[flag]]).T
                 matched_pair_actual_indexs = LD(order_driver_pair.tolist())
-                request_indexs = np.array(matched_pair_actual_indexs, dtype=np.int16)[:, 0]
+                request_indexs = np.array(matched_pair_actual_indexs)[:, 0]
                 driver_indexs = np.array(matched_pair_actual_indexs)[:, 1]
                 request_indexs_new = []
-                for index in request_indexs:
-                    request_indexs_new.append(request_array_temp[request_array_temp['order_id']==index].index.tolist()[0])
                 driver_indexs_new = []
+                for index in request_indexs:
+                    request_indexs_new.append(request_array_temp[request_array_temp['order_id'] == int(index)].index.tolist()[0])
                 for index in driver_indexs:
                     driver_indexs_new.append(driver_loc_array_temp[driver_loc_array_temp['driver_id'] == index].index.tolist()[0])
                 request_array_new = np.array(request_array_temp.loc[request_indexs_new])[:,:2]

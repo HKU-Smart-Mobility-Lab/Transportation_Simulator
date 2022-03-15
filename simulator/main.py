@@ -20,6 +20,7 @@ if __name__ == "__main__":
         for single_max_distance_num in max_distance_num:
             simulator.reset()
             track_record = []
+            t = time.time()
             for step in tqdm(range(simulator.finish_run_step)):
                 env_params['driver_num'] = single_driver_num
                 env_params['maximal_pickup_distance'] = single_max_distance_num
@@ -27,6 +28,8 @@ if __name__ == "__main__":
                 track_record.append(new_tracks)
             pickle.dump(track_record, open('./output/records_driver_num_'+str(single_driver_num)+'_distance_' +
                                            str(single_max_distance_num) + '.pickle', 'wb'))
+            file = open('./output/time_statistic.txt', 'a')
+            file.write(str(time.time()-t)+'\n')
 
 
 

@@ -22,13 +22,16 @@ def calculate_match_rate():
 
 def delete_none_order():
     data = pickle.load(open('./input/order.pickle', 'rb'))
-
-    pickle.dump(data,open('./input/order.pickle','wb'))
+    for time in data.keys():
+        for order in data[time]:
+            if order[0] == 32752:
+                print(order)
+    # pickle.dump(data,open('./input/order.pickle','wb'))
 
 
 if __name__ == '__main__':
-    # delete_none_order()
-    calculate_match_rate()
+    delete_none_order()
+    # calculate_match_rate()
     # print(np.random.choice([1,2,3,4,5,6,7], 7,replace=False).tolist())
     # test = pd.DataFrame([[1,2,3],[2,3,4]])
     # indexs = [3,2]
