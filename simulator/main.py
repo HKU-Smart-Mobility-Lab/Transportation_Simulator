@@ -11,7 +11,8 @@ warnings.filterwarnings("ignore")
 
 if __name__ == "__main__":
     simulator = Simulator(**env_params)
-    test_num = 1
+    test_num = 5
+    driver_num = [500,1000,1500,2000,2500]
     track_record = []
     # track的格式为[{'driver_1' : [[lng, lat, status, time_a], [lng, lat, status, time_b]],
     # 'driver_2' : [[lng, lat, status, time_a], [lng, lat, status, time_b]]},
@@ -19,12 +20,13 @@ if __name__ == "__main__":
     for num in range(test_num):
         simulator.reset()
         for step in tqdm(range(simulator.finish_run_step)):
+            env_params['driver_num'] = driver_num[num]
             new_tracks = simulator.step()
             track_record.append(new_tracks)
 
     # pickle.dump(track_record, open(data_path + 'toy_records_no_price_500' + '.pickle', 'wb'))
 
-    pickle.dump(track_record, open('./output/records_driver_num_500' + '.pickle', 'wb'))
+        pickle.dump(track_record, open('./output/records_driver_num_'+str(driver_num[num]) + '.pickle', 'wb'))
 
 
 

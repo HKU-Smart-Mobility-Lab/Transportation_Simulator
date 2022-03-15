@@ -135,7 +135,6 @@ class Simulator:
 
         # extract the order is matched
         df_matched = self.wait_requests[con_matched].reset_index(drop=True)
-
         if df_matched.shape[0] > 0:
             idle_driver_table = self.driver_table[(self.driver_table['status'] == 0) | (self.driver_table['status'] == 4)]
             order_array = df_matched['order_id'].values
@@ -153,6 +152,7 @@ class Simulator:
             con_driver_remain = prob_array >= driver_cancel_prob
 
             # price and pickup time moudle which used to judge whether cancel the order-driver pair
+            # matched_itinerary_df['pickup_time'].values
             con_passenge_keep_wait = df_matched['maximum_pickup_time_passenger_can_tolerate'].values > \
                                                         matched_itinerary_df['pickup_time'].values
 
@@ -174,7 +174,6 @@ class Simulator:
             new_matched_requests['t_end'] = self.time + new_matched_requests['pickup_time'].values + new_matched_requests['trip_time'].values
             new_matched_requests['status'] = 1
             new_matched_requests['driver_id'] = matched_pair_index_df[con_remain]['driver_id'].values
-
 
             # driver not cancelled
             self.driver_table.loc[cor_driver[con_remain], 'status'] = 2
@@ -215,7 +214,6 @@ class Simulator:
                         [lat_array, lng_array, np.array([order_id] * len(lat_array)), np.array(node_id_list), grid_id_array, task_type_array,
                          time_array]).T.tolist()
 
-
         update_wait_requests = pd.concat([update_wait_requests, self.wait_requests[~con_matched & con_keep_wait]],axis=0)
 
         return new_matched_requests, update_wait_requests
@@ -229,11 +227,9 @@ class Simulator:
             # directly sample orders from the historical order database
             sampled_requests = []
             temp_request = []
-            min_time = max(env_params['t_initial'], self.time - self.request_interval + 1)
+            min_time = max(env_params['t_initial'], self.time - self.request_interval)
             for time in range(min_time, self.time):
-                if time not in self.request_databases.keys():
-                    continue
-                elif time in self.request_databases.keys():
+                if time in self.request_databases.keys():
                     temp_request.extend(self.request_databases[time])
             # if self.time in self.request_databases.keys():
             #     temp_request = self.request_databases[self.time]
@@ -243,11 +239,8 @@ class Simulator:
             # sample a portion of historical orders
             num_request = int(np.rint(self.order_sample_ratio * database_size))
             if num_request <= database_size:
-                sampled_request_index = np.random.choice(database_size, num_request).tolist()
+                sampled_request_index = np.random.choice(database_size, num_request, replace=False).tolist()
                 sampled_requests = [temp_request[index] for index in sampled_request_index]
-
-
-
 
             # generate complete information for new orders
 
@@ -256,8 +249,6 @@ class Simulator:
                            'itinerary_segment_dis_list', 'trip_time', 'designed_reward', 'cancel_prob']
 
             if len(sampled_requests) > 0:
-                len1 = []
-                len2 = []
                 itinerary_segment_dis_list = []
                 itinerary_node_list = np.array(sampled_requests)[:, 11]
                 trip_distance = np.array(sampled_requests)[:, 7]
@@ -299,12 +290,8 @@ class Simulator:
                     env_params['maximum_pickup_time_passenger_can_tolerate_std'],
                     len(wait_info))
 
-
-
-
                 # wait_info = wait_info.drop(columns=['trip_distance'])
                 # wait_info = wait_info.drop(columns=['designed_reward'])
-
                 self.wait_requests = pd.concat([self.wait_requests, wait_info], ignore_index=True)
 
         return
@@ -484,7 +471,6 @@ class Simulator:
         delivery_finished_driver_index = finished_pickup_driver_index_array[remaining_time_array <= 0]
         self.driver_table.loc[delivery_not_finished_driver_index, 'status'] = 1
         self.driver_table.loc[delivery_not_finished_driver_index, 'remaining_time'] = remaining_time_array[remaining_time_array > 0]
-
         if len(delivery_finished_driver_index > 0):
             self.driver_table.loc[delivery_finished_driver_index, 'lng'] = \
                 self.driver_table.loc[delivery_finished_driver_index, 'target_loc_lng'].values
@@ -535,7 +521,6 @@ class Simulator:
         wait_requests = deepcopy(self.wait_requests)
         driver_table = deepcopy(self.driver_table)
         matched_pair_actual_indexes, matched_itinerary = order_dispatch(wait_requests, driver_table, self.maximal_pickup_distance, self.dispatch_method)
-
         # Step 2: driver/passenger reaction after dispatching
         df_new_matched_requests, df_update_wait_requests = self.update_info_after_matching_multi_process(matched_pair_actual_indexes, matched_itinerary)
         self.matched_requests = pd.concat([self.matched_requests, df_new_matched_requests], axis=0)

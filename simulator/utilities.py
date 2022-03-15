@@ -427,10 +427,10 @@ def order_dispatch(wait_requests, driver_table, maximal_pickup_distance=950, dis
     if num_wait_request > 0 and num_idle_driver > 0:
         if dispatch_method == 'LD':
             # generate order driver pairs and corresponding itinerary
-            request_array_temp = wait_requests.loc[:, ['origin_lng', 'origin_lat', 'order_id', 'weight']].values
-            request_array = np.repeat(request_array_temp, num_idle_driver, axis=0)
-            driver_loc_array_temp = idle_driver_table.loc[:, ['lng', 'lat', 'driver_id']].values
-            driver_loc_array = np.tile(driver_loc_array_temp, (num_wait_request, 1))
+            request_array_temp = wait_requests.loc[:, ['origin_lng', 'origin_lat', 'order_id', 'weight']]
+            request_array = np.repeat(request_array_temp.values, num_idle_driver, axis=0)
+            driver_loc_array_temp = idle_driver_table.loc[:, ['lng', 'lat', 'driver_id']]
+            driver_loc_array = np.tile(driver_loc_array_temp.values, (num_wait_request, 1))
 
             # itinerary_node_list, itinerary_segment_dis_list, dis_array = route_generation_array(request_array[:, :2],
             #                                                                                     driver_loc_array[:, :2],
@@ -442,12 +442,16 @@ def order_dispatch(wait_requests, driver_table, maximal_pickup_distance=950, dis
                 order_driver_pair = np.vstack(
                     [request_array[flag, 2], driver_loc_array[flag, 2], request_array[flag, 3], dis_array[flag]]).T
                 matched_pair_actual_indexs = LD(order_driver_pair.tolist())
-                request_indexs = np.array(matched_pair_actual_indexs,dtype=np.int16)[:, 0]
+                request_indexs = np.array(matched_pair_actual_indexs, dtype=np.int16)[:, 0]
                 driver_indexs = np.array(matched_pair_actual_indexs)[:, 1]
-                request_array = np.array(request_array_temp)
-                driver_loc_array = np.array(driver_loc_array_temp)
-                request_array_new = request_array[np.where(request_indexs==request_array[:,2])][:,:2]
-                driver_loc_array_new = driver_loc_array[np.where(driver_indexs==driver_loc_array[:,2])][:,:2]
+                request_indexs_new = []
+                for index in request_indexs:
+                    request_indexs_new.append(request_array_temp[request_array_temp['order_id']==index].index.tolist()[0])
+                driver_indexs_new = []
+                for index in driver_indexs:
+                    driver_indexs_new.append(driver_loc_array_temp[driver_loc_array_temp['driver_id'] == index].index.tolist()[0])
+                request_array_new = np.array(request_array_temp.loc[request_indexs_new])[:,:2]
+                driver_loc_array_new = np.array(driver_loc_array_temp.loc[driver_indexs_new])[:,:2]
                 itinerary_node_list, itinerary_segment_dis_list, dis_array = route_generation_array(
                     driver_loc_array_new, request_array_new, mode='test')
                 itinerary_node_list_new = []
@@ -460,7 +464,6 @@ def order_dispatch(wait_requests, driver_table, maximal_pickup_distance=950, dis
                 #     dis_array_new.append(dis_array[index])
 
                 matched_itinerary = [itinerary_node_list, itinerary_segment_dis_list, dis_array]
-
     return matched_pair_actual_indexs, np.array(matched_itinerary)
 
 
