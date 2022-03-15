@@ -13,13 +13,13 @@ if __name__ == "__main__":
     simulator = Simulator(**env_params)
     driver_num = [500,1000,1500,2000,2500]
     max_distance_num = [0.5,1,2,3]
-    track_record = []
     # track的格式为[{'driver_1' : [[lng, lat, status, time_a], [lng, lat, status, time_b]],
     # 'driver_2' : [[lng, lat, status, time_a], [lng, lat, status, time_b]]},
     # {'driver_1' : [[lng, lat, status, time_a], [lng, lat, status, time_b]]}]
     for single_driver_num in driver_num:
         for single_max_distance_num in max_distance_num:
             simulator.reset()
+            track_record = []
             for step in tqdm(range(simulator.finish_run_step)):
                 env_params['driver_num'] = single_driver_num
                 env_params['maximal_pickup_distance'] = single_max_distance_num
