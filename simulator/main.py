@@ -28,8 +28,10 @@ if __name__ == "__main__":
                 track_record.append(new_tracks)
             pickle.dump(track_record, open('./output/records_driver_num_'+str(single_driver_num)+'_distance_' +
                                            str(single_max_distance_num) + '.pickle', 'wb'))
-            file = open('./output/time_statistic.txt', 'a')
-            file.write(str(time.time()-t)+'\n')
+            break
+        break
+            # file = open('./output/time_statistic.txt', 'a')
+            # file.write(str(time.time()-t)+'\n')
 
 
 

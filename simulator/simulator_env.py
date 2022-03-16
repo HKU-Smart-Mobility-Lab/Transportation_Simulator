@@ -235,12 +235,13 @@ class Simulator:
             #     temp_request = self.request_databases[self.time]
             if temp_request == []:
                 return
-            database_size = len(temp_request)
+            sampled_requests = temp_request
+            # database_size = len(temp_request)
             # sample a portion of historical orders
-            num_request = int(np.rint(self.order_sample_ratio * database_size))
-            if num_request <= database_size:
-                sampled_request_index = np.random.choice(database_size, num_request, replace=False).tolist()
-                sampled_requests = [temp_request[index] for index in sampled_request_index]
+            # num_request = int(np.rint(self.order_sample_ratio * database_size))
+            # if num_request <= database_size:
+            #     sampled_request_index = np.random.choice(database_size, num_request, replace=False).tolist()
+            #     sampled_requests = [temp_request[index] for index in sampled_request_index]
 
             # generate complete information for new orders
 
@@ -282,9 +283,9 @@ class Simulator:
                     env_params['maximum_price_passenger_can_tolerate_mean'],
                     env_params['maximum_price_passenger_can_tolerate_std'],
                     len(wait_info))
-                wait_info = wait_info[
-                    wait_info['maximum_price_passenger_can_tolerate'] >= wait_info['trip_distance'] * env_params[
-                        'price_per_km']]
+                # wait_info = wait_info[
+                #     wait_info['maximum_price_passenger_can_tolerate'] >= wait_info['trip_distance'] * env_params[
+                #         'price_per_km']]
                 wait_info['maximum_pickup_time_passenger_can_tolerate'] = np.random.normal(
                     env_params['maximum_pickup_time_passenger_can_tolerate_mean'],
                     env_params['maximum_pickup_time_passenger_can_tolerate_std'],
@@ -380,6 +381,7 @@ class Simulator:
         This function used to update the drivers' status and info
         :return: None
         """
+
         # update next state
         # 车辆状态：0 cruise (park 或正在cruise)， 1 表示delivery，2 pickup, 3 表示下线, 4 reposition
         # 先更新未完成任务的，再更新已完成任务的
@@ -433,7 +435,7 @@ class Simulator:
         self.driver_table.loc[road_node_transfer_list, 'grid_id'] = grid_id_array
 
         # for all the finished tasks
-        self.driver_table.loc[loc_finished, 'remaining_time'] = 0
+        self.driver_table.loc[loc_finished & (~ loc_pickup), 'remaining_time'] = 0
         con_not_pickup = loc_finished & (loc_actually_cruising | loc_delivery | loc_reposition)
         con_not_pickup_actually_cruising = loc_finished & (loc_delivery | loc_reposition)
         self.driver_table.loc[con_not_pickup, 'lng'] = self.driver_table.loc[con_not_pickup, 'target_loc_lng'].values
@@ -463,10 +465,12 @@ class Simulator:
                                                               'current_road_node_index'].values
         itinerary_segment_dis_list = self.driver_table.loc[finished_pickup_driver_index_array,
                                                            'itinerary_segment_dis_list'].values
+        remaining_time_array_temp = self.driver_table.loc[finished_pickup_driver_index_array,
+                                                           'remaining_time'].values
         remaining_time_array = np.zeros(len(finished_pickup_driver_index_array))
         for i in range(remaining_time_array.shape[0]):
             current_node_index = current_road_node_index_array[i]
-            remaining_time_array[i] = np.sum(itinerary_segment_dis_list[i][current_node_index:]) / self.vehicle_speed * 3600 - self.delta_t
+            remaining_time_array[i] = np.sum(itinerary_segment_dis_list[i][current_node_index:]) / self.vehicle_speed * 3600 + remaining_time_array_temp[i]
         delivery_not_finished_driver_index = finished_pickup_driver_index_array[remaining_time_array > 0]
         delivery_finished_driver_index = finished_pickup_driver_index_array[remaining_time_array <= 0]
         self.driver_table.loc[delivery_not_finished_driver_index, 'status'] = 1

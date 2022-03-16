@@ -1,8 +1,8 @@
 env_params = {
 't_initial' :36000,
-'t_end' : 79200,
+'t_end' : 39200,
 'delta_t' : 5,  # s
-'vehicle_speed' : 22.68,   # km / h
+'vehicle_speed' : 22.788,   # km / h
 'repo_speed' : 1, #目前的设定需要与vehicl speed保持一致
 'order_sample_ratio' : 1,
 'order_generation_mode' : 'sample_from_base',
