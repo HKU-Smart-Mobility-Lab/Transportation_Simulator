@@ -10,6 +10,9 @@ def calculate_match_rate():
     orders = pickle.load(open('./input/order.pickle', 'rb'))
     for time in range(36000, 79200):
         if time in orders.keys():
+            for order in orders[time]:
+                if order[0] == 49213:
+                    print(order)
             count += len(orders[time])
     file = open('./output/match_rate.txt', 'w')
     for item in driver_num:
@@ -25,6 +28,7 @@ def calculate_match_rate():
             for i,time in enumerate(records):
                 for driver in time:
                     if isinstance(time[driver][0], list):
+                        # if str(int(time[driver][0][2])) not in x:
                         print(i,driver,time[driver][0])
                         matched += 1
             print(matched)
@@ -54,6 +58,9 @@ def delete_none_order():
 if __name__ == '__main__':
     # delete_none_order()
     calculate_match_rate()
+    # t = np.array([1,2,3,4])
+    # x = (t.cumsum()>10).argmax()
+    # print(x)
     # print(np.random.choice([1,2,3,4,5,6,7], 7,replace=False).tolist())
     # test = pd.DataFrame([[1,2,3],[2,3,4]])
     # indexs = [3,2]

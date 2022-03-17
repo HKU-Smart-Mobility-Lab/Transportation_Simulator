@@ -381,7 +381,6 @@ class Simulator:
         This function used to update the drivers' status and info
         :return: None
         """
-
         # update next state
         # 车辆状态：0 cruise (park 或正在cruise)， 1 表示delivery，2 pickup, 3 表示下线, 4 reposition
         # 先更新未完成任务的，再更新已完成任务的
@@ -420,7 +419,10 @@ class Simulator:
             itinerary_segment_cumsum_time = itinerary_segment_time.cumsum()
             new_road_node_index = (itinerary_segment_cumsum_time > self.delta_t).argmax()
             new_remaining_time = itinerary_segment_cumsum_time[new_road_node_index] - self.delta_t
-            new_road_node_index = new_road_node_index + current_node_index
+            if new_road_node_index == current_node_index:
+                new_road_node_index = len(transfer_itinerary_segment_dis_list[i])-1
+            else:
+                new_road_node_index = new_road_node_index + current_node_index
             new_road_node = transfer_itinerary_node_list[i][new_road_node_index]
 
             new_road_node_index_array[i] = new_road_node_index
