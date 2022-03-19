@@ -235,13 +235,12 @@ class Simulator:
             #     temp_request = self.request_databases[self.time]
             if temp_request == []:
                 return
-            sampled_requests = temp_request
-            # database_size = len(temp_request)
+            database_size = len(temp_request)
             # sample a portion of historical orders
-            # num_request = int(np.rint(self.order_sample_ratio * database_size))
-            # if num_request <= database_size:
-            #     sampled_request_index = np.random.choice(database_size, num_request, replace=False).tolist()
-            #     sampled_requests = [temp_request[index] for index in sampled_request_index]
+            num_request = int(np.rint(self.order_sample_ratio * database_size))
+            if num_request <= database_size:
+                sampled_request_index = np.random.choice(database_size, num_request, replace=False).tolist()
+                sampled_requests = [temp_request[index] for index in sampled_request_index]
 
             # generate complete information for new orders
 
@@ -256,9 +255,9 @@ class Simulator:
                 for k, itinerary_node in enumerate(itinerary_node_list):
                     if itinerary_node is not None:
                         itinerary_segment_dis = []
-                        # for i in range(len(itinerary_node) - 1):
-                        #     dis = distance(node_id_to_lat_lng[itinerary_node[i]], node_id_to_lat_lng[itinerary_node[i + 1]])
-                        #     itinerary_segment_dis.append(dis)
+                        for i in range(len(itinerary_node) - 1):
+                            dis = distance(node_id_to_lat_lng[itinerary_node[i]], node_id_to_lat_lng[itinerary_node[i + 1]])
+                            # itinerary_segment_dis.append(dis)
                         itinerary_node_list[k] = [itinerary_node[0]]
                         itinerary_segment_dis.append(trip_distance[k])
                         itinerary_segment_dis_list.append(itinerary_segment_dis)
