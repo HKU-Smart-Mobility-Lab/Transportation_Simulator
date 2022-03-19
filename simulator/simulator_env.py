@@ -158,7 +158,7 @@ class Simulator:
 
 
             con_passenger_remain = con_passenge_keep_wait
-            con_remain = con_driver_remain & con_passenger_remain | np.array([True]*len(con_driver_remain))
+            con_remain = con_driver_remain & con_passenger_remain
             # order after cancelled
             update_wait_requests = df_matched[~con_remain]
 
@@ -257,14 +257,14 @@ class Simulator:
                         itinerary_segment_dis = []
                         for i in range(len(itinerary_node) - 1):
                             dis = distance(node_id_to_lat_lng[itinerary_node[i]], node_id_to_lat_lng[itinerary_node[i + 1]])
-                            # itinerary_segment_dis.append(dis)
-                        itinerary_node_list[k] = [itinerary_node[0]]
-                        itinerary_segment_dis.append(trip_distance[k])
+                            itinerary_segment_dis.append(dis)
+                        # itinerary_node_list[k] = [itinerary_node[0]]
+                        # itinerary_segment_dis.append(trip_distance[k])
                         itinerary_segment_dis_list.append(itinerary_segment_dis)
-                # for j in range(len(itinerary_node_list)):
-                #     if len(itinerary_node_list[j]) == len(itinerary_segment_dis_list[j]):
-                #         continue
-                #     itinerary_node_list[j].pop()
+                for j in range(len(itinerary_node_list)):
+                    if len(itinerary_node_list[j]) == len(itinerary_segment_dis_list[j]):
+                        continue
+                    itinerary_node_list[j].pop()
 
                 wait_info = pd.DataFrame(sampled_requests, columns=column_name)
                 wait_info['itinerary_node_list'] = itinerary_node_list
@@ -282,9 +282,9 @@ class Simulator:
                     env_params['maximum_price_passenger_can_tolerate_mean'],
                     env_params['maximum_price_passenger_can_tolerate_std'],
                     len(wait_info))
-                # wait_info = wait_info[
-                #     wait_info['maximum_price_passenger_can_tolerate'] >= wait_info['trip_distance'] * env_params[
-                #         'price_per_km']]
+                wait_info = wait_info[
+                    wait_info['maximum_price_passenger_can_tolerate'] >= wait_info['trip_distance'] * env_params[
+                        'price_per_km']]
                 wait_info['maximum_pickup_time_passenger_can_tolerate'] = np.random.normal(
                     env_params['maximum_pickup_time_passenger_can_tolerate_mean'],
                     env_params['maximum_pickup_time_passenger_can_tolerate_std'],

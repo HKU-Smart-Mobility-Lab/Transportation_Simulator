@@ -26,9 +26,9 @@ if __name__ == "__main__":
             for step in tqdm(range(simulator.finish_run_step)):
                 new_tracks = simulator.step()
                 track_record.append(new_tracks)
-            pickle.dump(track_record, open('./output/records_driver_num_'+str(single_driver_num)+'_distance_' +
+            pickle.dump(track_record, open('./output/cruise/records_driver_num_'+str(single_driver_num)+'_distance_' +
                                            str(single_max_distance_num) + '.pickle', 'wb'))
-            file = open('./output/time_statistic.txt', 'a')
+            file = open('./output/cruise/time_statistic.txt', 'a')
             file.write(str(time.time()-t)+'\n')
 
 
