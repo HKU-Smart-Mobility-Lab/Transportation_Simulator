@@ -1,6 +1,6 @@
 env_params = {
 't_initial' :36000,
-'t_end' : 79200,
+'t_end' : 39200,
 'delta_t' : 5,  # s
 'vehicle_speed' : 22.788,   # km / h
 'repo_speed' : 1, #目前的设定需要与vehicl speed保持一致
@@ -15,10 +15,10 @@ env_params = {
 "maximum_price_passenger_can_tolerate_std":50,  # ￥
 'maximal_pickup_distance' : 1,  # km
 'request_interval': 5,  # s
-'cruise_flag' : True,
+'cruise_flag' : False,
 'max_idle_time' : 1,
 'cruise_mode': 'random',
-'reposition_flag': True,
+'reposition_flag': False,
 'eligible_time_for_reposition' : 10, # s
 'reposition_mode': '',
 'track_recording_flag' : True,

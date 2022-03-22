@@ -17,10 +17,6 @@ from collections import Counter
 import pymongo
 import time
 
-
-"""
-Here, we load the information of graph network from graphml file.
-"""
 G = ox.load_graphml('./input/graph.graphml')
 gdf_nodes, gdf_edges = ox.graph_to_gdfs(G)
 lat_list = gdf_nodes['y'].tolist()
@@ -36,12 +32,10 @@ center = (
 (env_params['east_lng'] + env_params['west_lng']) / 2, (env_params['north_lat'] + env_params['south_lat']) / 2)
 radius = max(abs(env_params['east_lng'] - env_params['west_lng']) / 2,
              abs(env_params['north_lat'] - env_params['south_lat']) / 2)
-side = env_params['side']
+side = 4
 interval = 2 * radius / side
 
-"""
-Here, we build the connection to mongodb, which will be used to speed up access to road network information.
-"""
+# database
 myclient = pymongo.MongoClient("mongodb://localhost:27017/")
 mydb = myclient["route_network"]
    
@@ -52,10 +46,10 @@ def get_zone(lat, lng):
     """
     :param lat: the latitude of coordinate
     :type : float
-    :param lng: the longitude of coordinate
-    :type lng: float
-    :return: the id of zone that the point belongs to
-    :rtype: float
+    :param lng:
+    :type lng:
+    :return:
+    :rtype:
     """
     if lat < center[1]:
         i = math.floor(side / 2) - math.ceil((center[1] - lat) / interval) + side % 2
@@ -80,14 +74,6 @@ result['grid_id'] = nodelist
 
 # print(time.time()-t)
 def distance(coord_1, coord_2):
-    """
-    :param coord_1: the coordinate of one point
-    :type coord_1: tuple -- (latitude,longitude)
-    :param coord_2: the coordinate of another point
-    :type coord_2: tuple -- (latitude,longitude)
-    :return: the manhattan distance between these two points
-    :rtype: float
-    """
     lat1, lon1, = coord_1
     lat2, lon2 = coord_2
     lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
@@ -109,14 +95,6 @@ def distance(coord_1, coord_2):
 
 
 def distance_array(coord_1, coord_2):
-    """
-    :param coord_1: array of coordinate
-    :type coord_1: numpy.array
-    :param coord_2: array of coordinate
-    :type coord_2: numpy.array
-    :return: the array of manhattan distance of these two-point pair
-    :rtype: numpy.array
-    """
     coord_1 = coord_1.astype(float)
     coord_2 = coord_2.astype(float)
     coord_1_array = np.radians(coord_1)
@@ -138,15 +116,10 @@ def distance_array(coord_1, coord_2):
     return manhattan_dis
 
 
+# given origin and destination, return itenarary
+
+# 在这里加入ra
 def get_distance_array(origin_coord_array, dest_coord_array):
-    """
-    :param origin_coord_array: list of coordinates
-    :type origin_coord_array:  list
-    :param dest_coord_array:  list of coordinates
-    :type dest_coord_array:  list
-    :return: tuple like (
-    :rtype: list
-    """
     dis_array = []
     for i in range(len(origin_coord_array)):
         dis = distance(origin_coord_array[i], dest_coord_array[i])
@@ -156,23 +129,6 @@ def get_distance_array(origin_coord_array, dest_coord_array):
 
 
 def route_generation_array(origin_coord_array, dest_coord_array, mode='complete'):
-    """
-
-    :param origin_coord_array: the K*2 type list, the first column is lng, the second column
-                                is lat.
-    :type origin_coord_array: numpy.array
-    :param dest_coord_array: the K*2 type list, the first column is lng, the second column
-                                is lat.
-    :type dest_coord_array: numpy.array
-    :param mode: the mode of generation; if the value of mode is complete, return the last node of route;
-                 if the value of mode is drop_end, the last node of route will be dropped.
-    :type mode: string
-    :return: tuple like (itinerary_node_list, itinerary_segment_dis_list, dis_array)
-             itinerary_node_list contains the id of nodes, itinerary_segment_dis_list contains
-             the distance between two nodes, dis_array contains the distance from origin node to
-             destination node
-    :rtype: tuple
-    """
     # print("route generation start")
     # origin_coord_list为 Kx2 的array，第一列为lng，第二列为lat；dest_coord_array同理
     # itinerary_node_list的每一项为一个list，包含了对应路线中的各个节点编号
@@ -286,35 +242,57 @@ def route_generation_array(origin_coord_array, dest_coord_array, mode='complete'
     dis_array = np.array(dis_array)
     return itinerary_node_list, itinerary_segment_dis_list, dis_array
 
-class road_network:
 
+# class GridSystem:
+#     def __init__(self, **kwargs):
+#         pass
+
+#     def load_data(self, data_path):
+#         # self.df_zone_info = pickle.load(open(data_path + 'zone_info.pickle', 'rb'))
+#         self.df_zone_info = pickle.load(open(data_path + 'zone_info.pickle', 'rb'))
+#         self.num_grid = self.df_zone_info.shape[0]
+#         self.adj_mat = pickle.load(open(data_path + 'adj_matrix.pickle', 'rb'))
+
+#     def get_basics(self):
+#         # output: basic information about the grid network
+#         return self.num_grid
+
+
+class road_network:
     def __init__(self, **kwargs):
         self.params = kwargs
 
-
     def load_data(self, data_path, file_name):
-        """
-        :param data_path: the path of road_network file
-        :type data_path:  string
-        :param file_name: the filename of road_network file
-        :type file_name:  string
-        :return: None
-        :rtype:  None
-        """
         # 路网格式：节点数字编号（从0开始），节点经度，节点纬度，所在grid id
         # columns = ['node_id', 'lng', 'lat', 'grid_id']
         # self.df_road_network = pickle.load(open(data_path + file_name, 'rb'))
         self.df_road_network = result
 
+    # def generate_road_info(self):
+        # data = pd.read_csv(self.params['input_file_path'])
+        # lng_max = max(data['origin_lng'].max(), data['dest_lng'].max())
+        # lng_min = min(data['origin_lng'].min(), data['dest_lng'].min())
+        # lat_max = max(data['origin_lat'].max(), data['dest_lat'].max())
+        # lat_min = min(data['origin_lat'].min(), data['dest_lat'].min())
+        # center = ((lng_max + lng_min) / 2, (lat_max + lat_min) / 2)
+        # interval = max((lng_max - lng_min), (lat_max - lat_min)) / self.params['side']
+        # G = ox.graph_from_bbox(lat_max + 0.1, lat_min - 0.1, lng_min - 0.1, lng_max + 0.1, network_type='drive_service')
+        # gdf_nodes, gdf_edges = ox.graph_to_gdfs(G)
+        # nodelist = []
+        # lat_list = gdf_nodes['y'].tolist()
+        # lng_list = gdf_nodes['x'].tolist()
+        # result = pd.DataFrame()
+        # result['lat'] = lat_list
+        # result['lng'] = lng_list
+        # result['node_id'] = gdf_nodes.index.tolist()
+        # result['node_id'] = gdf_nodes.index.tolist()[:10]
+        # for i in range(len(result)):
+        #     nodelist.append(get_zone(lat_list[i], lng_list[i], center, side, interval))
+        # result['grid_id'] = nodelist
+        # pickle.dump(result, open('./road_network_information' + '.pickle', 'wb'))
 
     def get_information_for_nodes(self, node_id_array):
-        """
-        :param node_id_array: the array of node id
-        :type node_id_array:  numpy.array
-        :return:  (lng_array,lat_array,grid_id_array), lng_array is the array of longitude;
-                lat_array is the array of latitude; the array of node id.
-        :rtype: tuple
-        """
+        # print(Counter(node_id_array))
         index_list = [self.df_road_network[self.df_road_network['node_id'] == item].index[0] for item in node_id_array]
         lng_array = self.df_road_network.loc[index_list,'lng'].values
         lat_array = self.df_road_network.loc[index_list,'lat'].values
@@ -323,24 +301,9 @@ class road_network:
 
 
 def get_exponential_epsilons(initial_epsilon, final_epsilon, steps, decay=0.99, pre_steps=10):
-    """
-    :param initial_epsilon: initial epsilon
-    :type initial_epsilon: float
-    :param final_epsilon: final epsilon
-    :type final_epsilon: float
-    :param steps: the number of iteration
-    :type steps: int
-    :param decay: decay rate
-    :type decay:  float
-    :param pre_steps: the number of iteration of pre randomness
-    :type pre_steps: int
-    :return: the array of epsilon
-    :rtype: numpy.array
-    """
-
     epsilons = []
 
-   # pre randomness
+    # pre randomness
     for i in range(0, pre_steps):
         epsilons.append(deepcopy(initial_epsilon))
 
@@ -354,20 +317,6 @@ def get_exponential_epsilons(initial_epsilon, final_epsilon, steps, decay=0.99, 
 
 
 def sample_all_drivers(driver_info, t_initial, t_end, driver_sample_ratio=1, driver_number_dist=''):
-    """
-    :param driver_info: the information of driver
-    :type driver_info:  pandas.DataFrame
-    :param t_initial:   time of initial state
-    :type t_initial:    int
-    :param t_end:       time of terminal state
-    :type t_end:        int
-    :param driver_sample_ratio:
-    :type driver_sample_ratio:
-    :param driver_number_dist:
-    :type driver_number_dist:
-    :return:
-    :rtype:
-    """
     # 当前并无随机抽样司机；后期若需要，可设置抽样模块生成sampled_driver_info
     new_driver_info = deepcopy(driver_info)
     sampled_driver_info = new_driver_info
@@ -409,16 +358,13 @@ def sample_request_num(t_mean, std, delta_t):
     return int(request_num)
 
 
-
+# reposition，暂时先不定义
 def reposition(eligible_driver_table, mode):
-    """
-    :param eligible_driver_table:
-    :type eligible_driver_table:
-    :param mode:
-    :type mode:
-    :return:
-    :rtype:
-    """
+    # 需用到route_generation_array
+    itinerary_node_list = []
+    itinerary_segment_dis_list = []
+    dis_array = np.array([])
+    # toy example
     random_number = np.random.randint(0, side * side - 1)
     dest_array = []
     for _ in range(len(eligible_driver_table)):
@@ -433,35 +379,33 @@ def reposition(eligible_driver_table, mode):
     return itinerary_node_list, itinerary_segment_dis_list, dis_array
 
 
-
+# cruising，暂时先不定义
 def cruising(eligible_driver_table, mode):
-    """
-    :param eligible_driver_table: information of eligible driver.
-    :type eligible_driver_table: pandas.DataFrame
-    :param mode: the type of cruising, if type is random; it can cruise to every node with equal
-                probability; if the type is nearby, it will cruise to the node in adjacent grid or
-                just stay at the original region.
-    :type mode: string
-    :return: itinerary_node_list, itinerary_segment_dis_list, dis_array
-    :rtype: tuple
-    """
+    # 需用到route_generation_array
+    itinerary_node_list = []
+    itinerary_segment_dis_list = []
+    dis_array = np.array([])
+
+    # toy example
     dest_array = []
     grid_id_list = eligible_driver_table.loc[:, 'grid_id'].values
+    # print("eligible_driver_table",eligible_driver_table)
+    # sys.pause()
     for grid_id in (grid_id_list):
-        if mode == "random":
-            random_number = random.randint(0,side*side-1)
+        target = []
+        if int((grid_id -1)/side) == int(grid_id/side) and grid_id-1 > 0:
+            target.append(grid_id-1)
+        if int((grid_id +1)/side) == int(grid_id/side) and grid_id+1 < side*side:
+            target.append(grid_id+1)
+        if grid_id+side < side*side:
+            target.append(grid_id+side)
+        if grid_id-side > 0:
+            target.append(grid_id-side)
+        random_number = choice(target)
+        if True:
+            record = result[result['grid_id'] == random_number]
         elif mode == 'nearby':
-            target = []
-            if int((grid_id - 1) / side) == int(grid_id / side) and grid_id - 1 > 0:
-                target.append(grid_id - 1)
-            if int((grid_id + 1) / side) == int(grid_id / side) and grid_id + 1 < side * side:
-                target.append(grid_id + 1)
-            if grid_id + side < side * side:
-                target.append(grid_id + side)
-            if grid_id - side > 0:
-                target.append(grid_id - side)
-            random_number = choice(target)
-        record = result[result['grid_id'] == random_number]
+            record = result[result['grid_id'] == random_number]
         if len(record) > 0:
             dest_array.append([record.iloc[0]['lng'], record.iloc[0]['lat']])
         else:
@@ -473,18 +417,6 @@ def cruising(eligible_driver_table, mode):
 
 
 def order_dispatch(wait_requests, driver_table, maximal_pickup_distance=950, dispatch_method='LD'):
-    """
-    :param wait_requests: the requests of orders
-    :type wait_requests: pandas.DataFrame
-    :param driver_table: the information of online drivers
-    :type driver_table:  pandas.DataFrame
-    :param maximal_pickup_distance: maximum of pickup distance
-    :type maximal_pickup_distance: int
-    :param dispatch_method: the method of order dispatch
-    :type dispatch_method: string
-    :return: matched_pair_actual_indexs: order and driver pair, matched_itinerary: the itinerary of matched driver
-    :rtype: tuple
-    """
     con_ready_to_dispatch = (driver_table['status'] == 0) | (driver_table['status'] == 4)
     idle_driver_table = driver_table[con_ready_to_dispatch]
     num_wait_request = wait_requests.shape[0]
@@ -536,7 +468,6 @@ def order_dispatch(wait_requests, driver_table, maximal_pickup_distance=950, dis
 
 
 def driver_online_offline_decision(driver_table, current_time):
-
     # 注意pickup和delivery driver不应当下线
     new_driver_table = driver_table
     return new_driver_table
@@ -547,15 +478,6 @@ def driver_online_offline_decision(driver_table, current_time):
 
 
 def get_nodeId_from_coordinate(lat, lng):
-    """
-
-    :param lat: latitude
-    :type lat:  float
-    :param lng: longitute
-    :type lng:  float
-    :return:  id of node
-    :rtype: string
-    """
     node_list = []
     for i in range(len(lat)):
         x = node_coord_to_id[(lat[i],lng[i])]
