@@ -251,16 +251,22 @@ class Simulator:
             if len(sampled_requests) > 0:
                 itinerary_segment_dis_list = []
                 itinerary_node_list = np.array(sampled_requests)[:, 11]
-                trip_distance = np.array(sampled_requests)[:, 7]
+                # trip_distance = np.array(sampled_requests)[:, 7]
                 for k, itinerary_node in enumerate(itinerary_node_list):
-                    if itinerary_node is not None:
+                    try:
                         itinerary_segment_dis = []
-                        for i in range(len(itinerary_node) - 1):
-                            dis = distance(node_id_to_lat_lng[itinerary_node[i]], node_id_to_lat_lng[itinerary_node[i + 1]])
-                            itinerary_segment_dis.append(dis)
-                        # itinerary_node_list[k] = [itinerary_node[0]]
-                        # itinerary_segment_dis.append(trip_distance[k])
+                        # route generation
+                        # for i in range(len(itinerary_node) - 1):
+                        #     dis = distance(node_id_to_lat_lng[itinerary_node[i]], node_id_to_lat_lng[itinerary_node[i + 1]])
+                        #     itinerary_segment_dis.append(dis)
+                        # start - end manhadun distance
+                        dis = distance(node_id_to_lat_lng[itinerary_node[0]], node_id_to_lat_lng[itinerary_node[-1]])
+                        itinerary_node_list[k] = [itinerary_node[0]]
+                        itinerary_segment_dis.append(dis)
                         itinerary_segment_dis_list.append(itinerary_segment_dis)
+                    except Exception as e:
+                        print(e)
+                        print(itinerary_node)
                 for j in range(len(itinerary_node_list)):
                     if len(itinerary_node_list[j]) == len(itinerary_segment_dis_list[j]):
                         continue
