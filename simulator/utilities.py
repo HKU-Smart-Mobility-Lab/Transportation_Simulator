@@ -186,7 +186,7 @@ def route_generation_array(origin_coord_array, dest_coord_array, mode='rg'):
     dis_array = []
     if mode == 'ma':
         for origin, dest in zip(origin_node_list, dest_node_list):
-            itinerary_node_list.append([origin,dest])
+            itinerary_node_list.append([dest])
             dis = distance(node_id_to_lat_lng[origin], node_id_to_lat_lng[dest])
             itinerary_segment_dis_list.append([dis])
             dis_array.append(dis)

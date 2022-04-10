@@ -14,9 +14,9 @@ if __name__ == "__main__":
     driver_num = [500,1000,1500,2000,2500,3000]
     max_distance_num = [5]
 
-    cruise_flag = [True]
-    pickup_flag = ['ma','rg']
-    delivery_flag = ['ma', 'rg']
+    cruise_flag = [True,False]
+    pickup_flag = ['rg','ma']
+    delivery_flag = ['rg','ma']
     # track的格式为[{'driver_1' : [[lng, lat, status, time_a], [lng, lat, status, time_b]],
     # 'driver_2' : [[lng, lat, status, time_a], [lng, lat, status, time_b]]},
     # {'driver_1' : [[lng, lat, status, time_a], [lng, lat, status, time_b]]}]

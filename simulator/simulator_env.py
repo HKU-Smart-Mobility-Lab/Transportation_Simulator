@@ -208,7 +208,6 @@ class Simulator:
                     time_array = np.concatenate([np.array([self.time]), self.time + time_array])
                     delivery_time = len(new_matched_requests['itinerary_node_list'].values.tolist()[j])
                     pickup_time = len(time_array) - delivery_time
-                    print(len(time_array),delivery_time,pickup_time)
                     task_type_array = np.concatenate([2 + np.zeros(pickup_time), 1 + np.zeros(delivery_time)])
                     order_id = self.driver_table.loc[index, 'matched_order_id']
 

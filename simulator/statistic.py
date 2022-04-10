@@ -70,10 +70,13 @@ def get_postmatching_pickup_time(records,avg = True):
                 for i in range(1,len(v)):
                     # print(v[i])
                     if v[i][-2] == 2.0:
-
                         end_time = v[i][-1]
+                    elif v[i][-2] == 1.0:
+                        end_time = v[i][-1]
+                        break
                 # sys.exit()
                 # print(end_time-start_time)
+                end_time = min(end_time,env_params['t_end'])
                 if end_time > start_time:
                     result.append(end_time - start_time)
     if len(result) != 0:
@@ -91,11 +94,20 @@ def get_driver_usage_rate(records,start_time,end_time,driver_num):
     for i,time_item in enumerate(records):
         for k,v in time_item.items():
             if isinstance(v[0],list):
-                start_time_ = i * env_params['delta_t'] + env_params['t_initial']
-                # print(v[-1])
-                if v[-1][-1] < end_time:
-                    end_time = v[-1][-1]
-                print(start_time_,end_time)
+
+                start_time_ = v[0][-1]#i * env_params['delta_t'] + env_params['t_initial']
+                end_time_ = v[0][-1]
+                for i in range(1,len(v)):
+                    if v[i][-1] < end_time:
+                        end_time_ = v[i][-1]
+                    else:
+                        end_time_ = end_time
+                        break
+
+                if start_time_ > end_time:
+                    print(v)
+                    print(start_time_,end_time)
+                    sys.exit()
                 occupied_time += (end_time - start_time_)
 
     print("ocu",occupied_time)
