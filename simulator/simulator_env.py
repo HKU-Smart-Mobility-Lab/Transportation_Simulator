@@ -395,7 +395,6 @@ class Simulator:
         This function used to update the drivers' status and info
         :return: None
         """
-        print(self.driver_table.iloc[2])
         # update next state
         # 车辆状态：0 cruise (park 或正在cruise)， 1 表示delivery，2 pickup, 3 表示下线, 4 reposition
         # 先更新未完成任务的，再更新已完成任务的
