@@ -554,7 +554,7 @@ class Simulator:
         self.cruise_and_reposition()
 
         # Step 4.1: track recording
-        if self.track_recording_flag and False:
+        if self.track_recording_flag:
             self.real_time_track_recording()
 
         # Step 5: update next state for drivers

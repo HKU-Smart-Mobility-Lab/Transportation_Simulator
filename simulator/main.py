@@ -40,7 +40,7 @@ if __name__ == "__main__":
                             track_record.append(new_tracks)
 
                         match_and_cancel_track_list = simulator.match_and_cancel_track
-                        file_path = './output/' + pc_flag + "_" + dl_flag + "_" + "cruise="+str(cr_flag)
+                        file_path = './output2/' + pc_flag + "_" + dl_flag + "_" + "cruise="+str(cr_flag)
                         if not os.path.exists(file_path):
                             os.makedirs(file_path)
                         pickle.dump(track_record, open(file_path + '/records_driver_num_'+str(single_driver_num)+'.pickle', 'wb'))
