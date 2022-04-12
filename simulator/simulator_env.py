@@ -395,7 +395,7 @@ class Simulator:
         This function used to update the drivers' status and info
         :return: None
         """
-        # print(self.driver_table.loc[self.driver_table['status'] == 2])
+        print(self.driver_table.iloc[2])
         # update next state
         # 车辆状态：0 cruise (park 或正在cruise)， 1 表示delivery，2 pickup, 3 表示下线, 4 reposition
         # 先更新未完成任务的，再更新已完成任务的
@@ -482,12 +482,12 @@ class Simulator:
                                                               'current_road_node_index'].values
         itinerary_segment_dis_list = self.driver_table.loc[finished_pickup_driver_index_array,
                                                            'itinerary_segment_dis_list'].values
-        remaining_time_array_temp = self.driver_table.loc[finished_pickup_driver_index_array,
-                                                           'remaining_time'].values
+        remaining_time_current_node_temp = self.driver_table.loc[finished_pickup_driver_index_array,
+                                                           'remaining_time_for_current_node'].values
         remaining_time_array = np.zeros(len(finished_pickup_driver_index_array))
         for i in range(remaining_time_array.shape[0]):
             current_node_index = current_road_node_index_array[i]
-            remaining_time_array[i] = np.sum(itinerary_segment_dis_list[i][current_node_index:]) / self.vehicle_speed * 3600 + remaining_time_array_temp[i]
+            remaining_time_array[i] = np.sum(itinerary_segment_dis_list[i][current_node_index+1:]) / self.vehicle_speed * 3600 + remaining_time_current_node_temp[i]
         delivery_not_finished_driver_index = finished_pickup_driver_index_array[remaining_time_array > 0]
         delivery_finished_driver_index = finished_pickup_driver_index_array[remaining_time_array <= 0]
         self.driver_table.loc[delivery_not_finished_driver_index, 'status'] = 1
