@@ -22,7 +22,7 @@ def get_matching_rate(records,order):
     total_num = 0
     matched_num = 0
     # calculate the number of orders
-    for time in range(env_params['t_initial'],env_params['t_end'],env_params['delta_t']):
+    for time in range(env_params['t_initial'],env_params['t_end']):
         if time in order.keys():
             total_num += len(order[time])
     # calculate the number of orders that are matched
@@ -108,7 +108,7 @@ def get_driver_usage_rate(records,start_time,end_time,driver_num):
                     print(v)
                     print(start_time_,end_time)
                     sys.exit()
-                occupied_time += (end_time - start_time_)
+                occupied_time += (end_time_ - start_time_)
 
     print("ocu",occupied_time)
     return (occupied_time / (end_time-start_time)) /  driver_num

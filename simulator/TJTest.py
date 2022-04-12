@@ -24,10 +24,10 @@ order = pickle.load(open("input/order.pickle",'rb'))
 # print(get_driver_pickup_ratio(records,36000,79200,500))
 # print(get_driver_usage_rate(records,36000,79200,500))
 
-path = "./output"
+path = "./output2"
 files = os.listdir(path)
 files.sort()
-print(files)
+# print(files)
 start_time = env_params['t_initial']
 end_time = env_params['t_end']
 driver_list = []
@@ -43,12 +43,12 @@ result_pd = pd.DataFrame()
 # result_pd = pd.read_csv("analysis.csv")
 for file in tqdm(files):
     if os.path.isdir(path + "/" + file):
-        print("dir",file)
+        # print("dir",file)
         sub_files = os.listdir(path + "/" + file)
         sub_files.remove("time_statistic.txt")
         sub_files.sort(key=lambda x:int(x.split(".")[0].split("_")[-1]))
         for sub_file in sub_files:
-            print("sub_file",sub_file)
+            # print("sub_file",sub_file)
             if ".pickle" in sub_file and "records" in sub_file:
                 records = pickle.load(open(path + "/" + file + "/" + sub_file,'rb'))
                 driver_num = int(sub_file.split(".")[0].split("_")[-1])
@@ -73,5 +73,8 @@ result_pd['waiting time'] = waiting_time_list
 result_pd['pickup time'] = pickup_time_list
 result_pd['pickup ratio'] = pickup_ratio_list
 result_pd['usage ratio'] = usage_ratio_list
+#
+result_pd.to_csv("analysis2.csv")
 
-result_pd.to_csv("analysis.csv")
+# driver = pickle.load(open("input/driver_info.pickle",'rb'))
+# print(driver.columns)
