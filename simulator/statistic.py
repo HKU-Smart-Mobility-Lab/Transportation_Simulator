@@ -62,10 +62,14 @@ def get_avg_prematching_waiting_time(records,order):
 # 计算乘客接单时间(可选择平均时间）
 def get_postmatching_pickup_time(records,avg = True):
     result = []
-    for i,time_item in enumerate(records):
+    for j,time_item in enumerate(records):
         for k,v in time_item.items():
             if isinstance(v[0],list):
-                start_time = i*env_params['delta_t'] + env_params['t_initial']
+                # start_time = i*env_params['delta_t'] + env_params['t_initial']
+                start_time = v[0][-1]
+                if v[0][-1] != j*env_params['delta_t'] + env_params['t_initial']:
+                    print(j*env_params['delta_t'] + env_params['t_initial'])
+                    print(v[0][-1])
                 end_time = v[0][-1]
                 for i in range(1,len(v)):
                     # print(v[i])
@@ -81,11 +85,12 @@ def get_postmatching_pickup_time(records,avg = True):
                     result.append(end_time - start_time)
     if len(result) != 0:
         if avg is True:
-
             return sum(result) / len(result)
         else: return sum(result)
     else: return 0
 
+# records = pickle.load(open('./output2/ma_ma_cruise=True/records_driver_num_2500.pickle', 'rb'))
+# print(get_postmatching_pickup_time(records))
 # print("乘客平均接单时间",get_postmatching_pickup_time(records))
 
 # 司机利用率（包括pickup及delivery）
@@ -109,8 +114,6 @@ def get_driver_usage_rate(records,start_time,end_time,driver_num):
                     print(start_time_,end_time)
                     sys.exit()
                 occupied_time += (end_time_ - start_time_)
-
-    print("ocu",occupied_time)
     return (occupied_time / (end_time-start_time)) /  driver_num
 
 # print("司机利用率",get_driver_usage_rate(records,36000,79200,500))
