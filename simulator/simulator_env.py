@@ -1,3 +1,5 @@
+import pandas as pd
+
 from simulator_pattern import *
 from utilities import *
 np.warnings.filterwarnings('ignore', category=np.VisibleDeprecationWarning)
@@ -15,6 +17,8 @@ class Simulator:
         self.time = None
         self.current_step = None
 
+        self.requests  = None
+
         # order generation
         self.order_sample_ratio = kwargs['order_sample_ratio']
         self.order_generation_mode = kwargs['order_generation_mode']
@@ -31,6 +35,8 @@ class Simulator:
         self.track_recording_flag = kwargs['track_recording_flag']
         self.new_tracks = {}
         self.match_and_cancel_track = {}
+        self.passenger_track = {}
+
         # pattern
         self.simulator_mode = kwargs.pop('simulator_mode', 'simulator_mode')
         self.experiment_mode = kwargs.pop('experiment_mode', 'test')
@@ -103,6 +109,21 @@ class Simulator:
 
         # construct order table
         self.request_databases = deepcopy(self.request_all)
+
+        request_list = []
+        for i in range(env_params['t_initial'],env_params['t_end']):
+            try:
+                for j in self.request_all[i]:
+                    request_list.append(j)
+            except:
+                print("no order at time {}".format(i))
+        column_name = ['order_id', 'origin_id', 'origin_lat', 'origin_lng', 'dest_id', 'dest_lat', 'dest_lng',
+                       'trip_distance', 'start_time', 'origin_grid_id', 'dest_grid_id', 'itinerary_node_list',
+                       'itinerary_segment_dis_list', 'trip_time', 'designed_reward', 'cancel_prob']
+        self.requests = pd.DataFrame(request_list,columns=column_name)
+        self.requests['matching_time'] = 0
+        self.requests['pickup_end_time'] = 0
+        self.requests['delivery_end_time'] = 0
         self.wait_requests = pd.DataFrame(columns=self.request_columns)
         self.matched_requests = pd.DataFrame(columns=self.request_columns)
 
@@ -198,6 +219,7 @@ class Simulator:
             self.driver_table.loc[cor_driver[con_remain], 'remaining_time_for_current_node'] = \
                 matched_itinerary_df[con_remain]['itinerary_segment_dis_list'].map(lambda x: x[0]).values / self.vehicle_speed * 3600
             # update matched tracks for one time
+            # self.wait_requests[]
             if self.track_recording_flag:
                 for j, index in enumerate(cor_driver[con_remain]):
                     driver_id = self.driver_table.loc[index, 'driver_id']
@@ -209,6 +231,8 @@ class Simulator:
                     pickup_time = len(time_array) - delivery_time
                     task_type_array = np.concatenate([2 + np.zeros(pickup_time), 1 + np.zeros(delivery_time)])
                     order_id = self.driver_table.loc[index, 'matched_order_id']
+
+                    self.requests.loc[self.requests['order_id'] == order_id,'matching_time'] = self.time
 
                     self.new_tracks[driver_id] = np.vstack(
                         [lat_array, lng_array, np.array([order_id] * len(lat_array)), np.array(node_id_list), grid_id_array, task_type_array,
@@ -411,6 +435,19 @@ class Simulator:
         loc_reposition = self.driver_table['status'] == 4
         loc_road_node_transfer = self.driver_table['remaining_time_for_current_node'].values - self.delta_t <= 0
 
+        for order_id,remaining_time in self.driver_table.loc[loc_finished & loc_pickup, ['matched_order_id','remaining_time']].values.tolist():
+            # print(order_id)
+
+            self.requests.loc[self.requests['order_id'] == order_id,'pickup_end_time'] = self.time + remaining_time + env_params['delta_t']
+
+        for order_id,remaining_time in self.driver_table.loc[loc_finished & loc_delivery, ['matched_order_id','remaining_time']].values.tolist():
+            self.requests.loc[self.requests['order_id'] == order_id,'delivery_end_time'] = self.time + remaining_time + env_params['delta_t']
+
+
+
+
+
+
         # for unfinished tasks
         self.driver_table.loc[loc_cruise, 'total_idle_time'] += self.delta_t
         con_real_time_ongoing = loc_unfinished & (loc_cruise | loc_reposition) | loc_pickup
@@ -470,12 +507,16 @@ class Simulator:
 
         # for delivery finished
         self.driver_table.loc[loc_finished & loc_delivery, 'matched_order_id'] = 'None'
+
+
+        # self.driver_table.loc[loc_finished & loc_delivery]
         """
         for pickup    delivery是载客  pickup是接客
         分两种情况，一种是下一时刻pickup 和 delivery都完成，另一种是下一时刻pickup 完成，delivery没完成
         当前版本delivery直接跳转，因此不需要做更新其中间路线的处理。车辆在pickup完成后，delivery完成前都实际处在pickup location。完成任务后直接跳转到destination
         如果需要考虑delivery的中间路线，可以把pickup和delivery状态进行融合
         """
+
         finished_pickup_driver_index_array = np.array(self.driver_table[loc_finished & loc_pickup].index)
         current_road_node_index_array = self.driver_table.loc[finished_pickup_driver_index_array,
                                                               'current_road_node_index'].values
@@ -483,6 +524,10 @@ class Simulator:
                                                            'itinerary_segment_dis_list'].values
         remaining_time_current_node_temp = self.driver_table.loc[finished_pickup_driver_index_array,
                                                            'remaining_time_for_current_node'].values
+
+# load pickup time
+
+
         remaining_time_array = np.zeros(len(finished_pickup_driver_index_array))
         for i in range(remaining_time_array.shape[0]):
             current_node_index = current_road_node_index_array[i]
@@ -508,6 +553,7 @@ class Simulator:
             self.driver_table.loc[delivery_finished_driver_index, 'itinerary_segment_dis_list'] = np.array(empty_list + [[-1]], dtype=object)[:-1]
             self.driver_table.loc[delivery_finished_driver_index, 'matched_order_id'] = 'None'
         self.wait_requests['wait_time'] += self.delta_t
+
         return
 
     def driver_online_offline_update(self):
