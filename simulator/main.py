@@ -11,12 +11,12 @@ import os
 # python D:\Feng\drl_subway_comp\main.py
 
 if __name__ == "__main__":
-    driver_num = [500,1000,1500,2000,2500,3000]
+    driver_num = [500]
     max_distance_num = [5]
 
-    cruise_flag = [True,False]
-    pickup_flag = ['rg','ma']
-    delivery_flag = ['rg','ma']
+    cruise_flag = [False]
+    pickup_flag = ['rg']
+    delivery_flag = ['rg']
     # track的格式为[{'driver_1' : [[lng, lat, status, time_a], [lng, lat, status, time_b]],
     # 'driver_2' : [[lng, lat, status, time_a], [lng, lat, status, time_b]]},
     # {'driver_1' : [[lng, lat, status, time_a], [lng, lat, status, time_b]]}]
@@ -33,17 +33,18 @@ if __name__ == "__main__":
                         simulator = Simulator(**env_params)
                         simulator.reset()
                         track_record = []
-
                         t = time.time()
                         for step in tqdm(range(simulator.finish_run_step)):
                             new_tracks = simulator.step()
                             track_record.append(new_tracks)
 
                         match_and_cancel_track_list = simulator.match_and_cancel_track
-                        file_path = './output2/' + pc_flag + "_" + dl_flag + "_" + "cruise="+str(cr_flag)
+                        file_path = './output3/' + pc_flag + "_" + dl_flag + "_" + "cruise="+str(cr_flag)
                         if not os.path.exists(file_path):
                             os.makedirs(file_path)
                         pickle.dump(track_record, open(file_path + '/records_driver_num_'+str(single_driver_num)+'.pickle', 'wb'))
+                        pickle.dump(simulator.requests, open(file_path + '/passenger_records_driver_num_'+str(single_driver_num)+'.pickle', 'wb'))
+
                         pickle.dump(match_and_cancel_track_list,open(file_path+'/match_and_cacel_'+str(single_driver_num)+'.pickle','wb'))
                         file = open(file_path + '/time_statistic.txt', 'a')
                         file.write(str(time.time()-t)+'\n')
