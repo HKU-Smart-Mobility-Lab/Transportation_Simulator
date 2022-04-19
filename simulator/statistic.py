@@ -93,34 +93,33 @@ def get_postmatching_pickup_time(records,avg = True):
 # print(get_postmatching_pickup_time(records))
 # print("乘客平均接单时间",get_postmatching_pickup_time(records))
 
-# 司机利用率（包括pickup及delivery）
-def get_driver_usage_rate(records,start_time,end_time,driver_num):
-    occupied_time = 0.0
+# delivery利用time（包括delivery part）
+def get_driver_delivery_time(records,start_time,end_time,driver_num,avg = False):
+    occupied_time = []
     for i,time_item in enumerate(records):
         for k,v in time_item.items():
             if isinstance(v[0],list):
-
-                start_time_ = v[0][-1]#i * env_params['delta_t'] + env_params['t_initial']
-                end_time_ = v[0][-1]
-                for i in range(1,len(v)):
-                    if v[i][-1] < end_time:
-                        end_time_ = v[i][-1]
-                    else:
-                        end_time_ = end_time
+                start_time_ = float("inf")
+                for i in range(len(v)):
+                    if v[i][-2] == 1.0:
+                        start_time_ = v[i][-1]
                         break
+                end_time_ = min(end_time,v[-1][-1])
 
-                if start_time_ > end_time:
-                    print(v)
-                    print(start_time_,end_time)
-                    sys.exit()
-                occupied_time += (end_time_ - start_time_)
-    return (occupied_time / (end_time-start_time)) /  driver_num
+                if start_time_ < end_time_:
+                    occupied_time.append(end_time_ - start_time_)
+    if avg == True:
+        return sum(occupied_time) / len(occupied_time)
 
+    return sum(occupied_time)
+# delivery usage rate
+def get_driver_delivery_ratio(records,start_time,end_time,driver_num):
+    return get_driver_delivery_time(records,start_time,end_time,driver_num,False) / (end_time - start_time) / driver_num
 # print("司机利用率",get_driver_usage_rate(records,36000,79200,500))
 
 # 司机接单率（pickup time / total time)
 def get_driver_pickup_ratio(records,start_time,end_time,driver_num):
-    return get_postmatching_pickup_time(records) / (end_time - start_time)
+    return get_postmatching_pickup_time(records,False) / (end_time - start_time) / driver_num
 
 # print("司机接单率",get_driver_pickup_ratio(records,36000,79200,500))
 
