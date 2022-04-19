@@ -94,7 +94,7 @@ def get_postmatching_pickup_time(records,avg = True):
 # print("乘客平均接单时间",get_postmatching_pickup_time(records))
 
 # delivery利用time（包括delivery part）
-def get_driver_delivery_time(records,start_time,end_time,driver_num,avg = False):
+def get_driver_delivery_time(records,start_time,end_time,driver_num,avg = True):
     occupied_time = []
     for i,time_item in enumerate(records):
         for k,v in time_item.items():
