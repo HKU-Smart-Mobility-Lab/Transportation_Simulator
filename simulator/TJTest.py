@@ -2,7 +2,7 @@ import os
 
 from statistic import get_matching_rate
 from statistic import get_avg_prematching_waiting_time
-from statistic import get_driver_usage_rate
+from statistic import get_driver_delivery_time,get_driver_delivery_ratio
 from statistic import get_postmatching_pickup_time,get_driver_pickup_ratio
 import sys
 import pickle
@@ -24,7 +24,7 @@ order = pickle.load(open("input/order.pickle",'rb'))
 # print(get_driver_pickup_ratio(records,36000,79200,500))
 # print(get_driver_usage_rate(records,36000,79200,500))
 
-path = "./output2"
+path = "./output3"
 files = os.listdir(path)
 files.sort()
 # print(files)
@@ -38,7 +38,8 @@ matching_rate_list = []
 waiting_time_list = []
 pickup_time_list = []
 pickup_ratio_list = []
-usage_ratio_list = []
+delivery_time_list = []
+delivery_ratio_list = []
 result_pd = pd.DataFrame()
 # result_pd = pd.read_csv("analysis.csv")
 for file in tqdm(files):
@@ -49,7 +50,7 @@ for file in tqdm(files):
         sub_files.sort(key=lambda x:int(x.split(".")[0].split("_")[-1]))
         for sub_file in sub_files:
             # print("sub_file",sub_file)
-            if ".pickle" in sub_file and "records" in sub_file:
+            if ".pickle" in sub_file and "records" in sub_file and "passenger" not in sub_file:
                 records = pickle.load(open(path + "/" + file + "/" + sub_file,'rb'))
                 driver_num = int(sub_file.split(".")[0].split("_")[-1])
                 pickup_list.append(file.split("_")[0])
@@ -60,7 +61,8 @@ for file in tqdm(files):
                 waiting_time_list.append(get_avg_prematching_waiting_time(records,order))
                 pickup_time_list.append(get_postmatching_pickup_time(records))
                 pickup_ratio_list.append(get_driver_pickup_ratio(records,start_time,end_time,driver_num))
-                usage_ratio_list.append(get_driver_usage_rate(records,start_time,end_time,driver_num))
+                delivery_time_list.append(get_driver_delivery_time(records,start_time,end_time,driver_num))
+                delivery_ratio_list.append(get_driver_delivery_ratio(records,start_time,end_time,driver_num))
 
 
 
@@ -72,8 +74,9 @@ result_pd['matching rate'] = matching_rate_list
 result_pd['waiting time'] = waiting_time_list
 result_pd['pickup time'] = pickup_time_list
 result_pd['pickup ratio'] = pickup_ratio_list
-result_pd['usage ratio'] = usage_ratio_list
-#
+result_pd['delivery time'] = delivery_time_list
+result_pd['delivery ratio'] = delivery_ratio_list
+
 result_pd.to_csv("analysis2.csv")
 
 # driver = pickle.load(open("input/driver_info.pickle",'rb'))
