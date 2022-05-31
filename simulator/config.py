@@ -1,6 +1,6 @@
 env_params = {
 't_initial' :36000,
-'t_end' : 79200,
+'t_end' : 36100,
 'delta_t' : 5,  # s
 'vehicle_speed' : 22.788,   # km / h
 'repo_speed' : 1, #目前的设定需要与vehicl speed保持一致
@@ -30,9 +30,9 @@ env_params = {
 'driver_file_name' : 'input/driver_info',
 'road_network_file_name' : 'road_network_information.pickle',
 'dispatch_method': 'LD', #LD: lagarange decomposition method designed by Peibo Duan
-'method': 'instant_reward_no_subway',
+# 'method': 'instant_reward_no_subway',
 'simulator_mode' : 'toy_mode',
-'experiment_mode' : 'test',
+'experiment_mode' : 'train',
 'driver_num':500,
 'side':4,
 'price_per_km':5,  # ￥ / km
@@ -41,7 +41,7 @@ env_params = {
 'south_lat': 40.6968,
 'east_lng': -74.0831,
 'west_lng': -73.8414,
-'method' : 'sarsa_no_subway'  #  'sarsa_no_subway' / 'pickup_distance' / 'instant_reward_no_subway'   #  rl for matching
+'method': 'sarsa_no_subway'  #  'sarsa_no_subway' / 'pickup_distance' / 'instant_reward_no_subway'   #  rl for matching
 }
 
 #  rl for matching
@@ -63,10 +63,10 @@ PRE_STEP = 0
 #  rl for matching
 
 #  rl for matching
-TRAIN_DATE_LIST = ['2015-07-06', '2015-07-07', '2015-07-08', '2015-07-09', '2015-07-10',
-                   '2015-07-13', '2015-07-14', '2015-07-15', '2015-07-16', '2015-07-17'
-                   ]
-
+# TRAIN_DATE_LIST = ['2015-07-06', '2015-07-07', '2015-07-08', '2015-07-09', '2015-07-10',
+#                    '2015-07-13', '2015-07-14', '2015-07-15', '2015-07-16', '2015-07-17'
+#                    ]
+TRAIN_DATE_LIST = [i for i in range(36000,36100)]
 
 TEST_DATE_LIST = ['2015-07-27', '2015-07-28', '2015-07-29', '2015-07-30', '2015-07-31']
 #  rl for matching

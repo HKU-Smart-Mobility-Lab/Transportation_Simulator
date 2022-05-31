@@ -39,14 +39,15 @@ class Simulator:
 
         # pattern
         self.simulator_mode = kwargs.pop('simulator_mode', 'simulator_mode')
-        self.experiment_mode = kwargs.pop('experiment_mode', 'test')
+        self.experiment_mode = kwargs.pop('experiment_mode', 'train')
+        self.experiment_date = kwargs.pop('experiment_date', '')
         self.request_file_name = kwargs['request_file_name']
         self.driver_file_name = kwargs['driver_file_name']
         pattern_params = {'simulator_mode': self.simulator_mode, 'request_file_name': self.request_file_name,
                           'driver_file_name': self.driver_file_name}
         pattern = SimulatorPattern(**pattern_params)
 
-        self.method = kwargs.pop('method', 'no_subway')  # rl for matching
+        # self.method = kwargs.pop('method', 'no_subway')  # rl for matching
 
         # road network
         road_network_file_name = kwargs['road_network_file_name']
@@ -110,7 +111,7 @@ class Simulator:
         self.driver_table['target_grid_id'] = self.driver_table['target_grid_id'].values.astype(int)
 
         # construct order table
-        self.request_databases = deepcopy(self.request_all)
+        self.request_databases = deepcopy(self.request_all[self.experiment_date])
 
         request_list = []
         for i in range(env_params['t_initial'],env_params['t_end']):
@@ -555,6 +556,7 @@ class Simulator:
                 target_node_array = self.driver_table.loc[eligible_driver_index, 'itinerary_node_list'].map(
                     lambda x: x[-1]).values
                 lng_array, lat_array, grid_id_array = self.RN.get_information_for_nodes(target_node_array)
+
                 self.driver_table.loc[eligible_driver_index, 'target_loc_lng'] = lng_array
                 self.driver_table.loc[eligible_driver_index, 'target_loc_lat'] = lat_array
                 self.driver_table.loc[eligible_driver_index, 'target_grid_id'] = grid_id_array
@@ -655,19 +657,7 @@ class Simulator:
         self.driver_table.loc[road_node_transfer_list, 'lat'] = lat_array
         self.driver_table.loc[road_node_transfer_list, 'grid_id'] = grid_id_array
 
-        # rl for matching
-        # generate idle transition r1
-        action_array = np.ones(grid_id_array.shape[0]) + 1
-        next_state_array = np.vstack([self.time + self.delta_t + np.zeros(grid_id_array.shape[0]),
-                                      target_grid_array]).T
-        reward_array = np.zeros(grid_id_array.shape[0])
-
-        self.dispatch_transitions_buffer[0] = np.concatenate([self.dispatch_transitions_buffer[0], state_array])
-        self.dispatch_transitions_buffer[1] = np.concatenate([self.dispatch_transitions_buffer[1], action_array])
-        self.dispatch_transitions_buffer[2] = np.concatenate(
-            [self.dispatch_transitions_buffer[2], next_state_array])
-        self.dispatch_transitions_buffer[3] = np.concatenate([self.dispatch_transitions_buffer[3], reward_array])
-        # rl for matching
+        
 
         # for all the finished tasks
         self.driver_table.loc[loc_finished & (~ loc_pickup), 'remaining_time'] = 0
