@@ -556,7 +556,21 @@ class Simulator:
                 target_node_array = self.driver_table.loc[eligible_driver_index, 'itinerary_node_list'].map(
                     lambda x: x[-1]).values
                 lng_array, lat_array, grid_id_array = self.RN.get_information_for_nodes(target_node_array)
+                # rl for matching
+                # generate idle transition r1
+                action_array = np.ones(grid_id_array.shape[0]) + 1
+                next_state_array = np.vstack([self.time + self.delta_t + np.zeros(grid_id_array.shape[0]),
+                                              target_grid_array]).T
+                reward_array = np.zeros(grid_id_array.shape[0])
 
+                self.dispatch_transitions_buffer[0] = np.concatenate([self.dispatch_transitions_buffer[0], state_array])
+                self.dispatch_transitions_buffer[1] = np.concatenate(
+                    [self.dispatch_transitions_buffer[1], action_array])
+                self.dispatch_transitions_buffer[2] = np.concatenate(
+                    [self.dispatch_transitions_buffer[2], next_state_array])
+                self.dispatch_transitions_buffer[3] = np.concatenate(
+                    [self.dispatch_transitions_buffer[3], reward_array])
+                # rl for matching
                 self.driver_table.loc[eligible_driver_index, 'target_loc_lng'] = lng_array
                 self.driver_table.loc[eligible_driver_index, 'target_loc_lat'] = lat_array
                 self.driver_table.loc[eligible_driver_index, 'target_grid_id'] = grid_id_array
@@ -688,19 +702,7 @@ class Simulator:
         当前版本delivery直接跳转，因此不需要做更新其中间路线的处理。车辆在pickup完成后，delivery完成前都实际处在pickup location。完成任务后直接跳转到destination
         如果需要考虑delivery的中间路线，可以把pickup和delivery状态进行融合
         """
-        # rl for matching
-        # generate idle transition r1
-        action_array = np.ones(grid_id_array.shape[0]) + 1
-        next_state_array = np.vstack([self.time + self.delta_t + np.zeros(grid_id_array.shape[0]),
-                                      target_grid_array]).T
-        reward_array = np.zeros(grid_id_array.shape[0])
 
-        self.dispatch_transitions_buffer[0] = np.concatenate([self.dispatch_transitions_buffer[0], state_array])
-        self.dispatch_transitions_buffer[1] = np.concatenate([self.dispatch_transitions_buffer[1], action_array])
-        self.dispatch_transitions_buffer[2] = np.concatenate(
-            [self.dispatch_transitions_buffer[2], next_state_array])
-        self.dispatch_transitions_buffer[3] = np.concatenate([self.dispatch_transitions_buffer[3], reward_array])
-        # rl for matching
         finished_pickup_driver_index_array = np.array(self.driver_table[loc_finished & loc_pickup].index)
         current_road_node_index_array = self.driver_table.loc[finished_pickup_driver_index_array,
                                                               'current_road_node_index'].values
