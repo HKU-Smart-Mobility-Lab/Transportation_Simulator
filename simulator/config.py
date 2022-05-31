@@ -40,5 +40,33 @@ env_params = {
 'north_lat': 40.8845,
 'south_lat': 40.6968,
 'east_lng': -74.0831,
-'west_lng': -73.8414
+'west_lng': -73.8414,
+'method' : 'sarsa_no_subway'  #  'sarsa_no_subway' / 'pickup_distance' / 'instant_reward_no_subway'   #  rl for matching
 }
+
+#  rl for matching
+# global variable and parameters for sarsa
+START_TIMESTAMP = 3 * 60 * 60  # the start timestamp
+LEN_TIME_SLICE = 300  # the length of a time slice, 5 minute (300 seconds) in this experiment
+LEN_TIME = 6 * 60 * 60  # 3 hours
+NUM_EPOCH = 4001  # 4001 / 3001
+FLAG_LOAD = False
+sarsa_params = dict(learning_rate=0.005, discount_rate=0.95)  # parameters in sarsa algorithm
+#  rl for matching
+
+#  rl for matching
+# parameters for exploration
+INIT_EPSILON = 0.9
+FINAL_EPSILON = 0
+DECAY = 0.997
+PRE_STEP = 0
+#  rl for matching
+
+#  rl for matching
+TRAIN_DATE_LIST = ['2015-07-06', '2015-07-07', '2015-07-08', '2015-07-09', '2015-07-10',
+                   '2015-07-13', '2015-07-14', '2015-07-15', '2015-07-16', '2015-07-17'
+                   ]
+
+
+TEST_DATE_LIST = ['2015-07-27', '2015-07-28', '2015-07-29', '2015-07-30', '2015-07-31']
+#  rl for matching

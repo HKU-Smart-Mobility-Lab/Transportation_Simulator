@@ -46,6 +46,8 @@ class Simulator:
                           'driver_file_name': self.driver_file_name}
         pattern = SimulatorPattern(**pattern_params)
 
+        self.method = kwargs.pop('method', 'no_subway')  # rl for matching
+
         # road network
         road_network_file_name = kwargs['road_network_file_name']
         '''
@@ -120,6 +122,9 @@ class Simulator:
         column_name = ['order_id', 'origin_id', 'origin_lat', 'origin_lng', 'dest_id', 'dest_lat', 'dest_lng',
                        'trip_distance', 'start_time', 'origin_grid_id', 'dest_grid_id', 'itinerary_node_list',
                        'itinerary_segment_dis_list', 'trip_time', 'designed_reward', 'cancel_prob']
+        self.end_of_episode = 0  # rl for matching
+        self.dispatch_transitions_buffer = [np.array([]).reshape([0, 2]), np.array([]), np.array([]).reshape([0, 2]),
+                                            np.array([]).astype(float)]  # rl for matching
         self.requests = pd.DataFrame(request_list,columns=column_name)
         self.requests['matching_time'] = 0
         self.requests['pickup_end_time'] = 0
@@ -218,6 +223,28 @@ class Simulator:
                 (matched_itinerary_df[con_remain]['itinerary_segment_dis_list'] + new_matched_requests['itinerary_segment_dis_list']).values
             self.driver_table.loc[cor_driver[con_remain], 'remaining_time_for_current_node'] = \
                 matched_itinerary_df[con_remain]['itinerary_segment_dis_list'].map(lambda x: x[0]).values / self.vehicle_speed * 3600
+
+            #  rl for matching
+            # generate transitions
+            state_array = np.vstack([self.time + np.zeros(new_matched_requests.shape[0]),
+                                     self.driver_table.loc[cor_driver[con_remain], 'grid_id'].values]).T
+            action_array = np.ones(new_matched_requests.shape[0])
+            next_state_array = np.vstack([new_matched_requests['t_end'].values,
+                                          new_matched_requests['dest_grid_id'].values]).T
+            if self.method in ['sarsa_travel_time', 'sarsa_travel_time_no_subway']:
+                reward_array = 5000. - new_matched_requests['trip_time'].values
+            elif self.method in ['sarsa_total_travel_time', 'sarsa_total_travel_time_no_subway']:
+                reward_array = 5151. - new_matched_requests['pickup_time'].values - new_matched_requests[
+                    'trip_time'].values
+            else:
+                reward_array = new_matched_requests['immediate_reward'].values
+
+            self.dispatch_transitions_buffer[0] = np.concatenate([self.dispatch_transitions_buffer[0], state_array])
+            self.dispatch_transitions_buffer[1] = np.concatenate([self.dispatch_transitions_buffer[1], action_array])
+            self.dispatch_transitions_buffer[2] = np.concatenate(
+                [self.dispatch_transitions_buffer[2], next_state_array])
+            self.dispatch_transitions_buffer[3] = np.concatenate([self.dispatch_transitions_buffer[3], reward_array])
+            #  rl for matching
             # update matched tracks for one time
             # self.wait_requests[]
             if self.track_recording_flag:
@@ -335,9 +362,150 @@ class Simulator:
 
         return
 
+    def step_bootstrap_new_orders(self, score_agent={}, epsilon=0): #  rl for matching
+        """
+        This function used to generate initial order by different time
+        :return:
+        """
+
+        if self.order_generation_mode == 'sample_from_base':
+            # directly sample orders from the historical order database
+            sampled_requests = []
+            temp_request = []
+            min_time = max(env_params['t_initial'], self.time - self.request_interval)
+            for time in range(min_time, self.time):
+                if time in self.request_databases.keys():
+                    temp_request.extend(self.request_databases[time])
+            # if self.time in self.request_databases.keys():
+            #     temp_request = self.request_databases[self.time]
+            if temp_request == []:
+                return
+            database_size = len(temp_request)
+            # sample a portion of historical orders
+            num_request = int(np.rint(self.order_sample_ratio * database_size))
+            if num_request <= database_size:
+                sampled_request_index = np.random.choice(database_size, num_request, replace=False).tolist()
+                sampled_requests = [temp_request[index] for index in sampled_request_index]
+
+            # generate complete information for new orders
+            # weight_array = np.ones(len(self.request_database))  # rl for matching
+            weight_array = np.ones(len(sampled_requests))  # rl for matching
+            original_trip_time = np.ones(len(self.request_database)) # rl for matching
+
+            #  rl for matching
+            if self.method == 'instant_reward_no_subway':
+                for i, request in enumerate(self.request_database):
+                    weight_array[i] = request[-2]   # deseigned_reward
+                    original_trip_time[i] = request[-3]  # trip time
+            elif self.method == 'pickup_distance':
+                for i, request in enumerate(self.request_database):
+                    original_trip_time[i] = request[-3]
+            #  rl for matching
+            elif self.method in ['sarsa', 'sarsa_no_subway', 'sarsa_travel_time', 'sarsa_travel_time_no_subway',
+                                 'sarsa_total_travel_time', 'sarsa_total_travel_time_no_subway']:  # rl for matching
+
+                # weight array should be updated here
+                # currently without trim
+                current_time_slice = int((self.time - self.t_initial - 1) / LEN_TIME_SLICE)  # rl for matching
+                num_slices = int(LEN_TIME / LEN_TIME_SLICE)  # rl for matching
+                for i, request in enumerate(self.request_database):  # rl for matching
+                    # origin = request[3:5]  # rl for matching
+                    # dest = request[5:7]  # rl for matching
+                    travel_time = request[-3]  # rl for matching
+                    # fare = request[7]  # rl for matching
+                    if self.method in ['sarsa_travel_time', 'sarsa_travel_time_no_subway']:
+                        reward = 5000. - request[-3]
+                    elif self.method in ['sarsa_total_travel_time', 'sarsa_total_travel_time_no_subway']:
+                        reward = 5151. - 135. - request[-3]
+                    elif self.method in ['sarsa', 'sarsa_no_subway']:  # rl for matching
+                        reward = request[-2]  # request[7] for revenue; -request[-3] for travel time  # rl for matching
+                    dest_grid_id = request[10]  # rl for matching
+                    original_trip_time[i] = request[-3]  # rl for matching
+
+                    # rl for matching
+                    # score original trip
+                    end_time_slice = int((self.time + 135 + travel_time - self.t_initial - 1) / LEN_TIME_SLICE)
+                    if end_time_slice >= num_slices:
+                        original_trip_score = reward
+                    else:
+                        next_state = State(end_time_slice, int(dest_grid_id))
+                        original_trip_score = reward + (
+                                sarsa_params['discount_rate'] ** (end_time_slice - current_time_slice)) \
+                                              * score_agent.q_value_table[next_state]
+                    weight_array[i] = original_trip_score
+
+                    if self.method in ['sarsa_no_subway', 'sarsa_travel_time_no_subway',
+                                       'sarsa_total_travel_time_no_subway']:
+                        continue
+                    # rl for matching
+
+            column_name = ['order_id', 'origin_id', 'origin_lat', 'origin_lng', 'dest_id', 'dest_lat', 'dest_lng',
+                           'trip_distance', 'start_time', 'origin_grid_id', 'dest_grid_id', 'itinerary_node_list',
+                           'itinerary_segment_dis_list', 'trip_time', 'designed_reward', 'cancel_prob']
+
+            if len(sampled_requests) > 0:
+                itinerary_segment_dis_list = []
+                itinerary_node_list = np.array(sampled_requests)[:, 11]
+                trip_distance = []
+                # trip_distance = npSS.array(sampled_requests)[:, 7]
+                for k, itinerary_node in enumerate(itinerary_node_list):
+                    try:
+                        itinerary_segment_dis = []
+                        # route generation
+                        if env_params['delivery_mode'] == 'rg':
+                            for i in range(len(itinerary_node) - 1):
+                                dis = distance(node_id_to_lat_lng[itinerary_node[i]], node_id_to_lat_lng[itinerary_node[i + 1]])
+                                itinerary_segment_dis.append(dis)
+                        # start - end manhadun distance
+                        elif env_params['delivery_mode'] == 'ma':
+                            dis = distance(node_id_to_lat_lng[itinerary_node[0]], node_id_to_lat_lng[itinerary_node[-1]])
+                            itinerary_node_list[k] = [itinerary_node[0],itinerary_node[-1]]
+                            itinerary_segment_dis.append(dis)
+                        itinerary_segment_dis_list.append(itinerary_segment_dis)
+                        trip_distance.append(sum(itinerary_segment_dis))
+                    except Exception as e:
+                        print(e)
+                        print(itinerary_node)
+                # for j in range(len(itinerary_node_list)):
+                #     if len(itinerary_node_list[j]) == len(itinerary_segment_dis_list[j]):
+                #         continue
+                #     itinerary_node_list[j].pop()
+
+                wait_info = pd.DataFrame(sampled_requests, columns=column_name)
+                wait_info['itinerary_node_list'] = itinerary_node_list
+                wait_info['start_time'] = self.time
+                wait_info['trip_distance'] = trip_distance
+                wait_info['wait_time'] = 0
+                wait_info['status'] = 0
+                # wait_info['maximum_wait_time'] = np.random.normal(self.maximum_wait_time_mean,
+                #                                                   self.maximum_wait_time_std, len(wait_info))
+                wait_info['maximum_wait_time'] = self.maximum_wait_time_mean
+                wait_info['itinerary_segment_dis_list'] = itinerary_segment_dis_list
+                wait_info['weight'] = weight_array # rl for matching
+                # add extra info of orders
+                # 添加分布  价格高的删除
+                wait_info['maximum_price_passenger_can_tolerate'] = np.random.normal(
+                    env_params['maximum_price_passenger_can_tolerate_mean'],
+                    env_params['maximum_price_passenger_can_tolerate_std'],
+                    len(wait_info))
+                wait_info = wait_info[
+                    wait_info['maximum_price_passenger_can_tolerate'] >= wait_info['trip_distance'] * env_params[
+                        'price_per_km']]
+                wait_info['maximum_pickup_time_passenger_can_tolerate'] = np.random.normal(
+                    env_params['maximum_pickup_time_passenger_can_tolerate_mean'],
+                    env_params['maximum_pickup_time_passenger_can_tolerate_std'],
+                    len(wait_info))
+
+                # wait_info = wait_info.drop(columns=['trip_distance'])
+                # wait_info = wait_info.drop(columns=['designed_reward'])
+                self.wait_requests = pd.concat([self.wait_requests, wait_info], ignore_index=True)
+
+        return
+
     def cruise_and_reposition(self):
         """
-        This function used to judge the drivers' status and update drivers' table
+        This function used to judge the drivers' status and
+         drivers' table
         :return: None
         """
         self.driver_columns = ['driver_id', 'start_time', 'end_time', 'lng', 'lat', 'grid_id', 'status',
@@ -487,6 +655,20 @@ class Simulator:
         self.driver_table.loc[road_node_transfer_list, 'lat'] = lat_array
         self.driver_table.loc[road_node_transfer_list, 'grid_id'] = grid_id_array
 
+        # rl for matching
+        # generate idle transition r1
+        action_array = np.ones(grid_id_array.shape[0]) + 1
+        next_state_array = np.vstack([self.time + self.delta_t + np.zeros(grid_id_array.shape[0]),
+                                      target_grid_array]).T
+        reward_array = np.zeros(grid_id_array.shape[0])
+
+        self.dispatch_transitions_buffer[0] = np.concatenate([self.dispatch_transitions_buffer[0], state_array])
+        self.dispatch_transitions_buffer[1] = np.concatenate([self.dispatch_transitions_buffer[1], action_array])
+        self.dispatch_transitions_buffer[2] = np.concatenate(
+            [self.dispatch_transitions_buffer[2], next_state_array])
+        self.dispatch_transitions_buffer[3] = np.concatenate([self.dispatch_transitions_buffer[3], reward_array])
+        # rl for matching
+
         # for all the finished tasks
         self.driver_table.loc[loc_finished & (~ loc_pickup), 'remaining_time'] = 0
         con_not_pickup = loc_finished & (loc_actually_cruising | loc_delivery | loc_reposition)
@@ -516,7 +698,19 @@ class Simulator:
         当前版本delivery直接跳转，因此不需要做更新其中间路线的处理。车辆在pickup完成后，delivery完成前都实际处在pickup location。完成任务后直接跳转到destination
         如果需要考虑delivery的中间路线，可以把pickup和delivery状态进行融合
         """
+        # rl for matching
+        # generate idle transition r1
+        action_array = np.ones(grid_id_array.shape[0]) + 1
+        next_state_array = np.vstack([self.time + self.delta_t + np.zeros(grid_id_array.shape[0]),
+                                      target_grid_array]).T
+        reward_array = np.zeros(grid_id_array.shape[0])
 
+        self.dispatch_transitions_buffer[0] = np.concatenate([self.dispatch_transitions_buffer[0], state_array])
+        self.dispatch_transitions_buffer[1] = np.concatenate([self.dispatch_transitions_buffer[1], action_array])
+        self.dispatch_transitions_buffer[2] = np.concatenate(
+            [self.dispatch_transitions_buffer[2], next_state_array])
+        self.dispatch_transitions_buffer[3] = np.concatenate([self.dispatch_transitions_buffer[3], reward_array])
+        # rl for matching
         finished_pickup_driver_index_array = np.array(self.driver_table[loc_finished & loc_pickup].index)
         current_road_node_index_array = self.driver_table.loc[finished_pickup_driver_index_array,
                                                               'current_road_node_index'].values
@@ -574,6 +768,11 @@ class Simulator:
         """
         self.time += self.delta_t
         self.current_step = int((self.time - self.t_initial) // self.delta_t)
+
+        # rl for matching
+        if self.current_step >= self.finish_run_step:
+            self.end_of_episode = 1
+        # rl for matching
         return
 
     def step(self):
@@ -613,3 +812,50 @@ class Simulator:
         self.update_time()
 
         return self.new_tracks
+
+    def rl_step(self, score_agent={}, epsilon=0): # rl for matching
+        """
+        This function used to run the simulator step by step
+        :return:
+        """
+        # self.new_tracks = {}
+
+        self.dispatch_transitions_buffer = [np.array([]).reshape([0, 2]), np.array([]), np.array([]).reshape([0, 2]),
+                                            np.array([]).astype(float)]  # rl for matching
+
+        # Step 1: order dispatching
+        wait_requests = deepcopy(self.wait_requests)
+        driver_table = deepcopy(self.driver_table)
+        matched_pair_actual_indexes, matched_itinerary = order_dispatch(wait_requests, driver_table,
+                                                                        self.maximal_pickup_distance,
+                                                                        self.dispatch_method)
+        # Step 2: driver/passenger reaction after dispatching
+        df_new_matched_requests, df_update_wait_requests = self.update_info_after_matching_multi_process(
+            matched_pair_actual_indexes, matched_itinerary)
+
+        if self.end_of_episode == 0:
+            self.matched_requests = pd.concat([self.matched_requests, df_new_matched_requests], axis=0)
+            self.matched_requests = self.matched_requests.reset_index(drop=True)
+            self.wait_requests = df_update_wait_requests.reset_index(drop=True)
+
+        # Step 3: bootstrap new orders
+            self.step_bootstrap_new_orders(score_agent, epsilon)
+
+        # Step 4: both-rg-cruising and/or repositioning decision
+        self.cruise_and_reposition()
+
+        # Step 4.1: track recording
+        if self.track_recording_flag:
+            self.real_time_track_recording()
+
+        # Step 5: update next state for drivers
+        self.update_state()
+
+        # Step 6： online/offline update()
+        self.driver_online_offline_update()
+
+        # Step 7: update time
+        self.update_time()
+
+        return self.dispatch_transitions_buffer   # rl for matching
+

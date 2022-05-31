@@ -79,6 +79,33 @@ for i in range(len(result)):
 result['grid_id'] = nodelist
 
 # print(time.time()-t)
+
+# rl for matching
+def get_exponential_epsilons(initial_epsilon, final_epsilon, steps, decay=0.99, pre_steps=10):
+    """
+    obtain exponential decay epsilons
+    :param initial_epsilon:
+    :param final_epsilon:
+    :param steps:
+    :param decay: decay rate
+    :param pre_steps: first several epsilons does note decay
+    :return:
+    """
+    epsilons = []
+
+    # pre randomness
+    for i in range(0, pre_steps):
+        epsilons.append(deepcopy(initial_epsilon))
+
+    # decay randomness
+    epsilon = initial_epsilon
+    for i in range(pre_steps, steps):
+        epsilon = max(final_epsilon, epsilon * decay)
+        epsilons.append(deepcopy(epsilon))
+
+    return np.array(epsilons)
+# rl for matching
+
 def distance(coord_1, coord_2):
     """
     :param coord_1: the coordinate of one point
@@ -562,6 +589,81 @@ def get_nodeId_from_coordinate(lat, lng):
         x = node_coord_to_id[(lat[i],lng[i])]
         node_list.append(x)
     return node_list
+
+def KM_simulation(wait_requests, driver_table, method = 'nothing'):
+    # currently, we use the dispatch alg of peibo
+    idle_driver_table = driver_table[driver_table['status'] == 0]
+    num_wait_request = wait_requests.shape[0]
+    num_idle_driver = idle_driver_table.shape[0]
+
+    if num_wait_request > 0 and num_idle_driver > 0:
+        starttime_1 = time.time()
+
+        request_array = wait_requests.loc[:, ['origin_lng', 'origin_lat', 'order_id', 'weight']].values
+        request_array = np.repeat(request_array, num_idle_driver, axis=0)
+        driver_loc_array = idle_driver_table.loc[:, ['lng', 'lat', 'driver_id']].values
+        driver_loc_array = np.tile(driver_loc_array, (num_wait_request, 1))
+        assert driver_loc_array.shape[0] == request_array.shape[0]
+        dis_array = distance_array(request_array[:, :2], driver_loc_array[:, :2])
+        # print('negative: ', np.where(dis_array)<0)
+        flag = np.where(dis_array <= 950)[0]
+        if method == 'pickup_distance':
+            order_driver_pair = np.vstack([request_array[flag, 2], driver_loc_array[flag, 2], 951 - dis_array[flag], dis_array[flag]]).T
+        elif method in ['total_travel_time_no_subway', 'total_travel_time_with_subway']:
+            order_driver_pair = np.vstack(
+                [request_array[flag, 2], driver_loc_array[flag, 2], request_array[flag, 3] + 135 - dis_array[flag]/6.33, dis_array[flag]]).T
+        elif method in ['sarsa_total_travel_time', 'sarsa_total_travel_time_no_subway']:
+            order_driver_pair = np.vstack(
+                [request_array[flag, 2], driver_loc_array[flag, 2], request_array[flag, 3] + 135 - dis_array[flag] / 6.33,
+                 dis_array[flag]]).T
+        else:
+            order_driver_pair = np.vstack([request_array[flag, 2], driver_loc_array[flag, 2], request_array[flag, 3], dis_array[flag]]).T  # rl for matching
+        order_driver_pair = order_driver_pair.tolist()
+
+        endtime_1 = time.time()
+        dtime_1 = endtime_1 - starttime_1
+        #print('# of pairs: ', len(order_driver_pair))
+        #print("pair forming time：%.8s s" % dtime_1)
+
+        if len(order_driver_pair) > 0:
+            #matched_pair_actual_indexs = km.run_kuhn_munkres(order_driver_pair)
+            matched_pair_actual_indexs = dispatch_alg_array(order_driver_pair)
+
+            endtime_2 = time.time()
+            dtime_2 = endtime_2 - endtime_1
+            #print('# of matched pairs: ', len(matched_pair_actual_indexs))
+            #print("dispatch alg 1 running time：%.8s s" % dtime_2)
+        else:
+            matched_pair_actual_indexs = []
+    else:
+        matched_pair_actual_indexs = []
+
+    return matched_pair_actual_indexs
+
+def KM_for_agent():
+    # KM used in agent.py for KDD competition
+    pass
+
+def random_actions(possible_directions):
+    # make random move and generate a one hot vector
+    action = random.sample(possible_directions, 1)[0]
+    return action
+
+# rl for matching
+# state for sarsa
+class State:
+    def __init__(self, time_slice: int, grid_id: int):
+        self.time_slice = time_slice  # time slice
+        self.grid_id = grid_id  # the grid where a taxi stays in
+
+    def __hash__(self):
+        return hash(str(self.grid_id) + str(self.time_slice))
+
+    def __eq__(self, other):
+        if self.grid_id == other.grid_id and self.time_slice == other.time_slice:
+            return True
+        return False
+# rl for matching
 
 #############################################################################
 
