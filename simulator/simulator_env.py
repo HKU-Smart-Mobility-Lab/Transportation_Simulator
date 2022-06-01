@@ -553,14 +553,38 @@ class Simulator:
                 self.driver_table.loc[eligible_driver_index, 'itinerary_segment_dis_list'] = np.array(itinerary_segment_dis_list + [[]], dtype=object)[:-1]
                 self.driver_table.loc[eligible_driver_index, 'remaining_time_for_current_node'] = \
                     self.driver_table.loc[eligible_driver_index, 'itinerary_segment_dis_list'].map(lambda x: x[0]).values / self.vehicle_speed * 3600
+
+                # TJ
+                # origin node
+                origin_node_array = self.driver_table.loc[eligible_driver_index, 'itinerary_node_list'].map(
+                    lambda x: x[0]).values
+                lng_array,lat_array,grid_id_array = self.RN.get_information_for_nodes(origin_node_array)
+                # target node
                 target_node_array = self.driver_table.loc[eligible_driver_index, 'itinerary_node_list'].map(
                     lambda x: x[-1]).values
-                lng_array, lat_array, grid_id_array = self.RN.get_information_for_nodes(target_node_array)
+                target_lng_array, target_lat_array, target_grid_array = self.RN.get_information_for_nodes(target_node_array)
+                # TJ
+
+                # TJ
+                state_array = np.vstack(
+                    [self.time + self.delta_t - self.max_idle_time + np.zeros(grid_id_array.shape[0]),
+                     grid_id_array]).T
+                remaining_time_array = self.driver_table.loc[eligible_driver_index, 'remaining_time'].map(
+                    lambda x: x[0]).values
+                # TJ
+
                 # rl for matching
                 # generate idle transition r1
                 action_array = np.ones(grid_id_array.shape[0]) + 1
-                next_state_array = np.vstack([self.time + self.delta_t + np.zeros(grid_id_array.shape[0]),
+
+                # TJ
+                # next_state_array = np.vstack([self.time + self.delta_t + np.zeros(grid_id_array.shape[0]),
+                #                               target_grid_array]).T
+
+                next_state_array = np.vstack([self.time + remaining_time_array,
                                               target_grid_array]).T
+
+                # TJ
                 reward_array = np.zeros(grid_id_array.shape[0])
 
                 self.dispatch_transitions_buffer[0] = np.concatenate([self.dispatch_transitions_buffer[0], state_array])
@@ -571,9 +595,9 @@ class Simulator:
                 self.dispatch_transitions_buffer[3] = np.concatenate(
                     [self.dispatch_transitions_buffer[3], reward_array])
                 # rl for matching
-                self.driver_table.loc[eligible_driver_index, 'target_loc_lng'] = lng_array
-                self.driver_table.loc[eligible_driver_index, 'target_loc_lat'] = lat_array
-                self.driver_table.loc[eligible_driver_index, 'target_grid_id'] = grid_id_array
+                self.driver_table.loc[eligible_driver_index, 'target_loc_lng'] = target_lng_array
+                self.driver_table.loc[eligible_driver_index, 'target_loc_lat'] = target_lat_array
+                self.driver_table.loc[eligible_driver_index, 'target_grid_id'] = target_grid_array
 
     def real_time_track_recording(self):
         """
