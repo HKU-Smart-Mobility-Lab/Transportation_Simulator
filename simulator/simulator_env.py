@@ -111,7 +111,7 @@ class Simulator:
         self.driver_table['target_grid_id'] = self.driver_table['target_grid_id'].values.astype(int)
 
         # construct order table
-        self.request_databases = deepcopy(self.request_all[self.experiment_date])
+        self.request_databases = deepcopy(self.request_all[self.experiment_date])  # 这里取出来之后是个list
 
         request_list = []
         for i in range(env_params['t_initial'],env_params['t_end']):
@@ -283,12 +283,15 @@ class Simulator:
             # directly sample orders from the historical order database
             sampled_requests = []
             temp_request = []
-            min_time = max(env_params['t_initial'], self.time - self.request_interval)
-            for time in range(min_time, self.time):
-                if time in self.request_databases.keys():
-                    temp_request.extend(self.request_databases[time])
+            # TJ  当更换训练为日期时 取消以下的注释
+            # min_time = max(env_params['t_initial'], self.time - self.request_interval)
+            # for time in range(min_time, self.time):
+            #     if time in self.request_databases.keys():
+            #         temp_request.extend(self.request_databases[time])
             # if self.time in self.request_databases.keys():
             #     temp_request = self.request_databases[self.time]
+            temp_request = self.request_databases
+            # TJ
             if temp_request == []:
                 return
             database_size = len(temp_request)
@@ -368,15 +371,21 @@ class Simulator:
         This function used to generate initial order by different time
         :return:
         """
-
+        # TJ
         if self.order_generation_mode == 'sample_from_base':
             # directly sample orders from the historical order database
             sampled_requests = []
             temp_request = []
-            min_time = max(env_params['t_initial'], self.time - self.request_interval)
-            for time in range(min_time, self.time):
-                if time in self.request_databases.keys():
-                    temp_request.extend(self.request_databases[time])
+            # TJ 当更换为按照日期训练时 进行调整
+            # min_time = max(env_params['t_initial'], self.time - self.request_interval)
+            # for time in range(min_time, self.time):
+            #     print(type(self.request_databases))
+            #     if time in self.request_databases.keys():
+            #         print("time",time)
+            #         print(len(self.request_databases),type(self.request_databases))
+            #         temp_request.extend(self.request_databases[time])
+            temp_request = self.request_databases
+        # TJ
             # if self.time in self.request_databases.keys():
             #     temp_request = self.request_databases[self.time]
             if temp_request == []:
@@ -388,18 +397,19 @@ class Simulator:
                 sampled_request_index = np.random.choice(database_size, num_request, replace=False).tolist()
                 sampled_requests = [temp_request[index] for index in sampled_request_index]
 
+            # TJ
             # generate complete information for new orders
             # weight_array = np.ones(len(self.request_database))  # rl for matching
             weight_array = np.ones(len(sampled_requests))  # rl for matching
-            original_trip_time = np.ones(len(self.request_database)) # rl for matching
+            original_trip_time = np.ones(len(self.request_databases)) # rl for matching
 
             #  rl for matching
             if self.method == 'instant_reward_no_subway':
-                for i, request in enumerate(self.request_database):
+                for i, request in enumerate(self.request_databases):
                     weight_array[i] = request[-2]   # deseigned_reward
                     original_trip_time[i] = request[-3]  # trip time
             elif self.method == 'pickup_distance':
-                for i, request in enumerate(self.request_database):
+                for i, request in enumerate(self.request_databases):
                     original_trip_time[i] = request[-3]
             #  rl for matching
             elif self.method in ['sarsa', 'sarsa_no_subway', 'sarsa_travel_time', 'sarsa_travel_time_no_subway',
@@ -409,7 +419,7 @@ class Simulator:
                 # currently without trim
                 current_time_slice = int((self.time - self.t_initial - 1) / LEN_TIME_SLICE)  # rl for matching
                 num_slices = int(LEN_TIME / LEN_TIME_SLICE)  # rl for matching
-                for i, request in enumerate(self.request_database):  # rl for matching
+                for i, request in enumerate(self.request_databases):  # rl for matching
                     # origin = request[3:5]  # rl for matching
                     # dest = request[5:7]  # rl for matching
                     travel_time = request[-3]  # rl for matching
