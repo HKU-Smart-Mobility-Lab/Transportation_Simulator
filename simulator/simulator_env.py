@@ -4,6 +4,7 @@ from simulator_pattern import *
 from utilities import *
 np.warnings.filterwarnings('ignore', category=np.VisibleDeprecationWarning)
 import sys
+from config import sarsa_params
 
 class Simulator:
     def __init__(self, **kwargs):
