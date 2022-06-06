@@ -29,7 +29,9 @@ class SarsaAgent(object):
         #                  107, 113, 114, 116, 120, 125, 127, 128, 137, 140, 141, 142, 143, 144, 148, 151, 152, 158,
         #                  161, 162, 163, 164, 166, 170, 186, 209, 211, 224, 229, 230, 231, 232, 233, 234, 236, 237,
         #                  238, 239, 243, 244, 246, 249, 261, 262, 263]
+        # TJ
         self.grid_ids = [i for i in range(env_params['side']**2)]
+        # TJ
         # the set of time slices
         self.time_slices = list()  # the set of time slices in an epoch
         for i in range(int(LEN_TIME / LEN_TIME_SLICE)):
@@ -49,6 +51,10 @@ class SarsaAgent(object):
                 self.q_value_table[s] = 0
 
     def update_q_value_table(self, s0: State, s1: State, reward: float):
+        print(s0.time_slice,s0.grid_id)
+        print(s1.time_slice,s1.grid_id)
+        print(s0 in self.q_value_table)
+        print(s1 in self.q_value_table)
         if s1.time_slice >= int(LEN_TIME / LEN_TIME_SLICE):
             self.q_value_table[s0] = (1 - self.learning_rate) * self.q_value_table[s0] + self.learning_rate * reward
         else:

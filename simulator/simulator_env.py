@@ -239,7 +239,8 @@ class Simulator:
                 reward_array = 5151. - new_matched_requests['pickup_time'].values - new_matched_requests[
                     'trip_time'].values
             else:
-                reward_array = new_matched_requests['immediate_reward'].values
+                # reward_array = new_matched_requests['immediate_reward'].values
+                reward_array = new_matched_requests['designed_reward'].values
 
             self.dispatch_transitions_buffer[0] = np.concatenate([self.dispatch_transitions_buffer[0], state_array])
             self.dispatch_transitions_buffer[1] = np.concatenate([self.dispatch_transitions_buffer[1], action_array])

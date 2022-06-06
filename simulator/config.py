@@ -46,9 +46,9 @@ env_params = {
 
 #  rl for matching
 # global variable and parameters for sarsa
-START_TIMESTAMP = 3 * 60 * 60  # the start timestamp
-LEN_TIME_SLICE = 300  # the length of a time slice, 5 minute (300 seconds) in this experiment
-LEN_TIME = 6 * 60 * 60  # 3 hours
+START_TIMESTAMP = 36000  # the start timestamp
+LEN_TIME_SLICE = 5  # the length of a time slice, 5 minute (300 seconds) in this experiment
+LEN_TIME = 100 # 3 hours
 NUM_EPOCH = 4001  # 4001 / 3001
 FLAG_LOAD = False
 sarsa_params = dict(learning_rate=0.005, discount_rate=0.95)  # parameters in sarsa algorithm
