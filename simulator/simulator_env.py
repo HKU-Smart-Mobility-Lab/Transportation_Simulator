@@ -98,6 +98,9 @@ class Simulator:
         self.request_all = pattern.request_all
         self.request_databases = None
         self.request_database = None
+        # TJ
+        self.total_reward = 0
+        # TJ
 
     def initial_base_tables(self):
         """
@@ -131,8 +134,14 @@ class Simulator:
         self.requests['matching_time'] = 0
         self.requests['pickup_end_time'] = 0
         self.requests['delivery_end_time'] = 0
+        # TJ
+        # self.requests['immediate_reward'] = 2.5
+        # TJ
         self.wait_requests = pd.DataFrame(columns=self.request_columns)
         self.matched_requests = pd.DataFrame(columns=self.request_columns)
+        # TJ
+        self.total_reward = 0
+        # TJ
 
     def reset(self):
         self.initial_base_tables()
@@ -240,7 +249,9 @@ class Simulator:
                     'trip_time'].values
             else:
                 # reward_array = new_matched_requests['immediate_reward'].values
+                # TJ
                 reward_array = new_matched_requests['designed_reward'].values
+                # TJ
 
             self.dispatch_transitions_buffer[0] = np.concatenate([self.dispatch_transitions_buffer[0], state_array])
             self.dispatch_transitions_buffer[1] = np.concatenate([self.dispatch_transitions_buffer[1], action_array])
@@ -342,6 +353,9 @@ class Simulator:
                 wait_info['start_time'] = self.time
                 wait_info['trip_distance'] = trip_distance
                 wait_info['wait_time'] = 0
+                # TJ
+                wait_info['designed_reward'] = 2.5 + 0.5 * int(max(0,trip_distance-322)/322)
+                # TJ
                 wait_info['status'] = 0
                 # wait_info['maximum_wait_time'] = np.random.normal(self.maximum_wait_time_mean,
                 #                                                   self.maximum_wait_time_std, len(wait_info))
@@ -861,6 +875,10 @@ class Simulator:
         df_new_matched_requests, df_update_wait_requests = self.update_info_after_matching_multi_process(
             matched_pair_actual_indexes, matched_itinerary)
 
+        # self.total_reward += np.sum(df_new_matched_requests['immediate_reward'].values)
+        # TJ
+        self.total_reward += np.sum(df_new_matched_requests['designed_reward'].values)
+        # TJ
         if self.end_of_episode == 0:
             self.matched_requests = pd.concat([self.matched_requests, df_new_matched_requests], axis=0)
             self.matched_requests = self.matched_requests.reset_index(drop=True)
