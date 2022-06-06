@@ -115,7 +115,12 @@ class Simulator:
         self.driver_table['target_grid_id'] = self.driver_table['target_grid_id'].values.astype(int)
 
         # construct order table
-        self.request_databases = deepcopy(self.request_all[self.experiment_date])  # 这里取出来之后是个list
+        # TJ
+        if self.experiment_date in self.request_all.keys():
+            self.request_databases = deepcopy(self.request_all[self.experiment_date])  # 这里取出来之后是个list
+        else:
+            self.request_databases = []
+        # TJ
 
         request_list = []
         for i in range(env_params['t_initial'],env_params['t_end']):
@@ -877,7 +882,10 @@ class Simulator:
 
         # self.total_reward += np.sum(df_new_matched_requests['immediate_reward'].values)
         # TJ
-        self.total_reward += np.sum(df_new_matched_requests['designed_reward'].values)
+        if len(df_new_matched_requests) != 0:
+            self.total_reward += np.sum(df_new_matched_requests['designed_reward'].values)
+        else:
+            self.total_reward += 0
         # TJ
         if self.end_of_episode == 0:
             self.matched_requests = pd.concat([self.matched_requests, df_new_matched_requests], axis=0)
