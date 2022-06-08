@@ -51,10 +51,6 @@ class SarsaAgent(object):
                 self.q_value_table[s] = 0
 
     def update_q_value_table(self, s0: State, s1: State, reward: float):
-        print(s0.time_slice,s0.grid_id)
-        print(s1.time_slice,s1.grid_id)
-        print(s0 in self.q_value_table)
-        print(s1 in self.q_value_table)
         if s1.time_slice >= int(LEN_TIME / LEN_TIME_SLICE):
             self.q_value_table[s0] = (1 - self.learning_rate) * self.q_value_table[s0] + self.learning_rate * reward
         else:
