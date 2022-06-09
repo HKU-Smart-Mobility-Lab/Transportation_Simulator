@@ -115,22 +115,22 @@ def distance(coord_1, coord_2):
     :return: the manhattan distance between these two points
     :rtype: float
     """
-    lat1, lon1, = coord_1
-    lat2, lon2 = coord_2
-    lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
-    dlon = abs(lon2 - lon1)
-    dlat = abs(lat2 - lat1)
-    r = 6371
-
-    alat = sin(dlat / 2) ** 2
-    clat = 2 * atan2(alat ** 0.5, (1 - alat) ** 0.5)
-    lat_dis = clat * r
-
-    alon = sin(dlon / 2) ** 2
-    clon = 2 * atan2(alon ** 0.5, (1 - alon) ** 0.5)
-    lon_dis = clon * r
-
-    manhattan_dis = abs(lat_dis) + abs(lon_dis)
+    manhattan_dis = 0
+    try:
+        lat1, lon1, = coord_1
+        lat2, lon2 = coord_2
+        lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
+        r = 6371
+        lat_dis = r * acos(min(1.0, cos(lat1) ** 2 * cos(lon1 - lon2) + sin(lat1) ** 2))
+        lon_dis = r * (lat2 - lat1)
+        manhattan_dis = (abs(lat_dis) ** 2 + abs(lon_dis) ** 2) ** 0.5
+    except Exception as e:
+        print(e)
+        print(coord_1)
+        print(coord_2)
+        print(lon1 - lon2)
+        print(cos(lat1) ** 2 * cos(lon1 - lon2) + sin(lat1) ** 2)
+        print(acos(cos(lat1) ** 2 * cos(lon1 - lon2) + sin(lat1) ** 2))
 
     return manhattan_dis
 
@@ -144,24 +144,16 @@ def distance_array(coord_1, coord_2):
     :return: the array of manhattan distance of these two-point pair
     :rtype: numpy.array
     """
-    coord_1 = coord_1.astype(float)
-    coord_2 = coord_2.astype(float)
-    coord_1_array = np.radians(coord_1)
-    coord_2_array = np.radians(coord_2)
-    dlon = np.abs(coord_2_array[:, 0] - coord_1_array[:, 0])
-    dlat = np.abs(coord_2_array[:, 1] - coord_1_array[:, 1])
-    r = 6371
-
-    alat = np.sin(dlat / 2) ** 2
-    clat = 2 * np.arctan2(alat ** 0.5, (1 - alat) ** 0.5)
-    lat_dis = clat * r
-
-    alon = np.sin(dlon / 2) ** 2
-    clon = 2 * np.arctan2(alon ** 0.5, (1 - alon) ** 0.5)
-    lon_dis = clon * r
-
-    manhattan_dis = np.abs(lat_dis) + np.abs(lon_dis)
-
+    manhattan_dis = list()
+    for i in range(len(coord_1)):
+        manhattan_dis = 0
+        lat1, lon1, = coord_1[i]
+        lat2, lon2 = coord_2[i]
+        lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
+        r = 6371
+        lat_dis = r * acos(min(1.0, cos(lat1) ** 2 * cos(lon1 - lon2) + sin(lat1) ** 2))
+        lon_dis = r * (lat2 - lat1)
+        manhattan_dis.append((abs(lat_dis) ** 2 + abs(lon_dis) ** 2) ** 0.5)
     return manhattan_dis
 
 
