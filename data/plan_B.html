@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <title>MapVGL</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <style>
+    html,
+    body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+    }
+    #map_container {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+    }
+    </style>
+    <script src="//api.map.baidu.com/api?v=1.0&type=webgl&ak=nsvLDRKHrHkhFvMwqPzyZZFVTZm5I4nd"></script>
+    <script src="//mapv.baidu.com/build/mapv.min.js"></script>
+    <script src="../static/common.js"></script>
+    <script src="https://code.bdstatic.com/npm/mapvgl@1.0.0-beta.141/dist/mapvgl.min.js"></script>
+</head>
+<body>
+    <div id="map_container"></div>
+    <script>
+    /* global BMapGL */
+    /* global Stats */
+    /* global mapv */
+    /* global mapvgl */
+    /* global initMap */
+    var map = initMap({
+        tilt: 60,
+        heading: 0,
+        center: [-73.982316, 40.7730913],
+        zoom: 13,
+    });
+
+    var view = new mapvgl.View({
+        map: map
+    });
+
+    view.startAnimation();
+
+    fetch('../data/route.csv').then(function (rs) {
+        return rs.text();
+    }).then(function (csvstr) {
+        // csvstr = (csvstr.split('\n').slice(0, 1).concat(csvstr.split('\n').slice(1, 10))).join('\n');
+        var dataSet = mapv.csv.getDataSet(csvstr);
+        var data = dataSet.get();
+
+        var linePointLayer = new mapvgl.LinePointLayer({
+            size: 5,
+            speed: 1,
+            color: 'red',
+            animationType: mapvgl.LinePointLayer.ANIMATION_TYPE_UNIFORM_SPEED,
+            shapeType: mapvgl.LinePointLayer.SHAPE_TYPE_CIRCLE,
+            blend: 'lighter'
+        });
+        view.addLayer(linePointLayer);
+        linePointLayer.setData(data);
+
+        var lineLayer = new mapvgl.SimpleLineLayer({
+            // color: 'rgba(55, 55, 255, 0.11)'
+            color: 'green'
+        });
+        view.addLayer(lineLayer);
+        lineLayer.setData(data);
+    });
+    </script>
+</body>
+</html>
