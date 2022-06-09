@@ -11,7 +11,11 @@ import pymongo
 from math import radians, sin, atan2
 warnings.filterwarnings("ignore")
 exitFlag = 0
-
+from azureml.opendatasets import NycTlcYellow
+from math import cos,acos
+from datetime import datetime
+from dateutil import parser
+import numpy as np
 env_params = {
     'north_lat': 40.8845,
     'south_lat': 40.6968,
@@ -44,6 +48,17 @@ mydb = myclient["route_network"]
 
 mycollect = mydb['route_list']
 
+def t2s(t): #t format is hh:mm:ss
+    if t != '0':
+        h,m,s = str(t).split(" ")[-1].split(":")
+#         print(h , m, s)
+        return int(h) * 3600 + int(m) * 60 + int(s)
+    else:
+         return 0
+
+def t2d(t): #t format is hh:mm:ss
+         return str(t).split(" ")[0]
+
 def distance(coord_1, coord_2):
     """
     :param coord_1: the coordinate of one point
@@ -53,24 +68,25 @@ def distance(coord_1, coord_2):
     :return: the manhattan distance between these two points
     :rtype: float
     """
-    lat1, lon1, = coord_1
-    lat2, lon2 = coord_2
-    lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
-    dlon = abs(lon2 - lon1)
-    dlat = abs(lat2 - lat1)
-    r = 6371
-
-    alat = sin(dlat / 2) ** 2
-    clat = 2 * atan2(alat ** 0.5, (1 - alat) ** 0.5)
-    lat_dis = clat * r
-
-    alon = sin(dlon / 2) ** 2
-    clon = 2 * atan2(alon ** 0.5, (1 - alon) ** 0.5)
-    lon_dis = clon * r
-
-    manhattan_dis = abs(lat_dis) + abs(lon_dis)
+    manhattan_dis = 0
+    try:
+        lat1, lon1, = coord_1
+        lat2, lon2 = coord_2
+        lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
+        r = 6371
+        lat_dis = r * acos(min(1.0, cos(lat1) ** 2 * cos(lon1 - lon2) + sin(lat1) ** 2))
+        lon_dis = r * (lat2 - lat1)
+        manhattan_dis = (abs(lat_dis) ** 2 + abs(lon_dis) ** 2) ** 0.5
+    except Exception as e:
+        print(e)
+        print(coord_1)
+        print(coord_2)
+        print(lon1 - lon2)
+        print(cos(lat1) ** 2 * cos(lon1 - lon2) + sin(lat1) ** 2)
+        print(acos(cos(lat1) ** 2 * cos(lon1 - lon2) + sin(lat1) ** 2))
 
     return manhattan_dis
+
 
 def get_zone(lat, lng):
     """
@@ -93,8 +109,16 @@ def get_zone(lat, lng):
     return i * side + j
 
 
-data = pd.read_csv('C:\\Users\\kejintao\\Downloads\\yellow_tripdata_2015-05.csv')
+# data = pd.read_csv('C:\\Users\\kejintao\\Downloads\\yellow_tripdata_2015-05.csv')
+# data_num = len(data)
+end_date = parser.parse('2015-05-02')
+start_date = parser.parse('2015-05-01')
+nyc_tlc = NycTlcYellow(start_date=start_date, end_date=end_date)
+
+data = nyc_tlc.to_pandas_dataframe()
+data = data.head(10)
 data_num = len(data)
+print(data)
 pbar = tqdm(total=data_num)
 queueLock = threading.Lock()
 workQueue = queue.Queue(data_num+1)
@@ -132,7 +156,7 @@ def process_data(q):
             data = q.get()
             # try:
             # temp_record = {}
-            x = ox.distance.get_nearest_node(G, (data[6], data[5]), method=None, return_dist=False)
+            x = ox.distance.get_nearest_node(G, (data[8], data[7]), method=None, return_dist=False)
             point = gdf_nodes['geometry'][x]
             ori_id, temp_ori_lat, temp_ori_lng = x, point.y, point.x
             x = ox.distance.get_nearest_node(G, (data[10], data[9]), method=None, return_dist=False)
@@ -148,10 +172,10 @@ def process_data(q):
             dest_grid_id_list.append(get_zone(temp_dest_lat,temp_dest_lng))
             # pickup_distance.append(data[4])
             pickup_time.append(data[1])
-            data = {
+            re_data = {
                 'node': str(ori_id) + str(dest_id)
             }
-            re = mycollect.find_one(data)
+            re = mycollect.find_one(re_data)
             if re:
                 ite = [int(item) for item in re['itinerary_node_list'].strip('[').strip(']').split(', ')]
             else:
@@ -210,13 +234,31 @@ pd_data['dest_id'] = dest_id_list
 pd_data['dest_lat'] = dest_lat
 pd_data['dest_lng'] = dest_lng
 pd_data['trip_distance'] = pickup_distance
-pd_data['start_time'] = pickup_time
+pd_data['timestamp'] = pickup_time
+pd_data['start_time'] = pd_data['timestamp'].apply(t2s)
+pd_data['date'] = pd_data['timestamp'].apply(t2d)
 pd_data['origin_grid_id'] = ori_grid_id_list
-pd_data['dest_Grid_id'] = dest_grid_id_list
+pd_data['dest_grid_id'] = dest_grid_id_list
 pd_data['itinerary_node_list'] = itinerary_node_list
 pd_data['itinerary_segment_dis_list'] = itinerary_segment_dis_list
 pd_data['trip_time'] = 0
+pd_data['designed_reward'] = 0
 pd_data['cancel_prob'] = 0
-pd_data.to_csv('dataset.csv',index=False)
-# pickle.dump(result, open('./simulator/output/multi_thread_2015.pickle', 'wb'))
+pd_data.to_csv('input/May_dataset.csv',index=False)
+result = {}
+for day in range(1,2):
+    day_res = {}
+    if day < 10:
+        date = '2015-05-0' + str(day)
+    else:
+        date = '2015-05-' + str(day)
+    tmp_pd = pd_data[pd_data['date']==date]
+    time = tmp_pd.start_time.unique()
+    for t in time:
+        day_res[t] = tmp_pd[np.logical_and(tmp_pd['date']==date,tmp_pd['start_time']==t)][['order_id', 'origin_id', 'origin_lat', 'origin_lng', 'dest_id', 'dest_lat', 'dest_lng',
+                           'trip_distance', 'start_time', 'origin_grid_id', 'dest_grid_id', 'itinerary_node_list',
+                           'itinerary_segment_dis_list', 'trip_time', 'designed_reward', 'cancel_prob']].values.tolist()
+    result[date] = day_res
+print(result)
+pickle.dump(result, open('input/NYU_May.pickle', 'wb'))
 print("退出主线程")
