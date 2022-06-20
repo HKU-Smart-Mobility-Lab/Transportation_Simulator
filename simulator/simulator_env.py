@@ -448,7 +448,7 @@ class Simulator:
                     if self.method in ['sarsa_travel_time', 'sarsa_travel_time_no_subway']:
                         reward = 5000. - request[-3]
                     elif self.method in ['sarsa_total_travel_time', 'sarsa_total_travel_time_no_subway']:
-                        reward = 5151. - 135. - request[-3]
+                        reward = 5151. - 0.5*self.maximal_pickup_distance/self.vehicle_speed - request[-3]
                     elif self.method in ['sarsa', 'sarsa_no_subway']:  # rl for matching
                         reward = request[-2]  # request[7] for revenue; -request[-3] for travel time  # rl for matching
                     dest_grid_id = request[10]  # rl for matching
@@ -456,7 +456,7 @@ class Simulator:
 
                     # rl for matching
                     # score original trip
-                    end_time_slice = int((self.time + 135 + travel_time - self.t_initial - 1) / LEN_TIME_SLICE)
+                    end_time_slice = int((self.time + 0.5*self.maximal_pickup_distance/self.vehicle_speed + travel_time - self.t_initial - 1) / LEN_TIME_SLICE)
                     if end_time_slice >= num_slices:
                         original_trip_score = reward
                     else:
