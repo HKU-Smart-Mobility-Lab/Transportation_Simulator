@@ -17,6 +17,7 @@ class Simulator:
         self.repo_speed = kwargs.pop('repo_speed', 3)
         self.time = None
         self.current_step = None
+        self.rl_mode = kwargs['rl_mode']
 
         self.requests  = None
 
@@ -101,6 +102,8 @@ class Simulator:
         # TJ
         self.total_reward = 0
         # TJ
+        if self.rl_mode == 'reposition':
+            self.reposition_method = kwargs['reposition_method']  # rl for repositioning
 
     def initial_base_tables(self):
         """
@@ -113,6 +116,32 @@ class Simulator:
         # construct driver table
         self.driver_table = sample_all_drivers(self.driver_info, self.t_initial, self.t_end, self.driver_sample_ratio)
         self.driver_table['target_grid_id'] = self.driver_table['target_grid_id'].values.astype(int)
+        if self.rl_mode == 'reposition':
+            # rl for repositioning
+            # drivers that are repositioning
+            self.state_grid_array = np.array([])
+            self.state_time_array = np.array([])
+            self.action_array = np.array([])
+            self.next_state_grid_array = np.array([])
+            self.next_state_time_array = np.array([])
+            if self.reposition_method == 'A2C_global_aware':
+                self.global_time = []
+                self.global_drivers_num = []
+                self.global_orders_num = []
+            self.con_long_idle = None
+
+            # finished transitions
+            self.state_grid_array_done = np.array([])
+            self.state_time_array_done = np.array([])
+            self.action_array_done = np.array([])
+            self.next_state_grid_array_done = np.array([])
+            self.next_state_time_array_done = np.array([])
+            self.reward_array_done = np.array([])
+            self.done_array = np.array([])
+
+            # average revenue in each grid
+            self.avg_revenue_by_grid = np.zeros(side**2)
+            # rl for repositioning
 
         # construct order table
         # TJ
@@ -132,8 +161,10 @@ class Simulator:
         column_name = ['order_id', 'origin_id', 'origin_lat', 'origin_lng', 'dest_id', 'dest_lat', 'dest_lng',
                        'trip_distance', 'start_time', 'origin_grid_id', 'dest_grid_id', 'itinerary_node_list',
                        'itinerary_segment_dis_list', 'trip_time', 'designed_reward', 'cancel_prob']
-        self.end_of_episode = 0  # rl for matching
-        self.dispatch_transitions_buffer = [np.array([]).reshape([0, 2]), np.array([]), np.array([]).reshape([0, 2]),
+
+        if self.rl_mode == 'matching':
+            self.end_of_episode = 0  # rl for matching
+            self.dispatch_transitions_buffer = [np.array([]).reshape([0, 2]), np.array([]), np.array([]).reshape([0, 2]),
                                             np.array([]).astype(float)]  # rl for matching
         self.requests = pd.DataFrame(request_list,columns=column_name)
         self.requests['matching_time'] = 0
@@ -158,6 +189,28 @@ class Simulator:
         :param matched_itinerary: including driver pick up route info
         :return: matched requests and wait requests
         """
+        if self.rl_mode == 'reposition':
+            # record number of idle drivers
+            # rl for repositioning
+            con_idle_or_repo = (self.driver_table['status'] == 0) | (self.driver_table['status'] == 2)
+            grid_id_idle_drivers = self.driver_table.loc[con_idle_or_repo, 'grid_id'].values
+            indices = np.where(grid_id_idle_drivers.reshape(grid_id_idle_drivers.size, 1) == self.zone_id_array)[1]
+            kd = np.bincount(indices)
+            idle_drivers_pre = np.zeros(side**2)
+            idle_drivers_pre[:len(kd)] = kd
+            idle_drivers_pre += 1
+
+            # record total revenue of  wait_requests
+            self.avg_revenue_by_grid = np.zeros(side**2)
+            group = self.wait_requests.loc[:, ['origin_grid_id', 'immediate_reward']].groupby('origin_grid_id')
+            gsum = group.sum()
+            grid_id_array = np.array(gsum.index)
+            indices = np.where(grid_id_array.reshape(grid_id_array.size, 1) == self.zone_id_array)[1]
+            self.avg_revenue_by_grid[indices] = gsum['immediate_reward'].values
+            self.avg_revenue_by_grid = self.avg_revenue_by_grid / idle_drivers_pre
+            # print('avg_revenue_by_grid: ', self.avg_revenue_by_grid)
+
+            # rl for repositioning
         new_matched_requests = pd.DataFrame([], columns=self.request_columns)
         update_wait_requests = pd.DataFrame([], columns=self.request_columns)
         matched_pair_index_df = pd.DataFrame(matched_pair_actual_indexes, columns=['order_id', 'driver_id', 'weight', 'pickup_distance'])
@@ -240,30 +293,31 @@ class Simulator:
             self.driver_table.loc[cor_driver[con_remain], 'remaining_time_for_current_node'] = \
                 matched_itinerary_df[con_remain]['itinerary_segment_dis_list'].map(lambda x: x[0]).values / self.vehicle_speed * 3600
 
-            #  rl for matching
-            # generate transitions
-            state_array = np.vstack([self.time + np.zeros(new_matched_requests.shape[0]),
-                                     self.driver_table.loc[cor_driver[con_remain], 'grid_id'].values]).T
-            action_array = np.ones(new_matched_requests.shape[0])
-            next_state_array = np.vstack([new_matched_requests['t_end'].values,
-                                          new_matched_requests['dest_grid_id'].values]).T
-            if self.method in ['sarsa_travel_time', 'sarsa_travel_time_no_subway']:
-                reward_array = 5000. - new_matched_requests['trip_time'].values
-            elif self.method in ['sarsa_total_travel_time', 'sarsa_total_travel_time_no_subway']:
-                reward_array = 5151. - new_matched_requests['pickup_time'].values - new_matched_requests[
-                    'trip_time'].values
-            else:
-                # reward_array = new_matched_requests['immediate_reward'].values
-                # TJ
-                reward_array = new_matched_requests['designed_reward'].values
-                # TJ
+            if self.rl_mode == 'matching':
+                #  rl for matching
+                # generate transitions
+                state_array = np.vstack([self.time + np.zeros(new_matched_requests.shape[0]),
+                                         self.driver_table.loc[cor_driver[con_remain], 'grid_id'].values]).T
+                action_array = np.ones(new_matched_requests.shape[0])
+                next_state_array = np.vstack([new_matched_requests['t_end'].values,
+                                              new_matched_requests['dest_grid_id'].values]).T
+                if self.method in ['sarsa_travel_time', 'sarsa_travel_time_no_subway']:
+                    reward_array = 5000. - new_matched_requests['trip_time'].values
+                elif self.method in ['sarsa_total_travel_time', 'sarsa_total_travel_time_no_subway']:
+                    reward_array = 5151. - new_matched_requests['pickup_time'].values - new_matched_requests[
+                        'trip_time'].values
+                else:
+                    # reward_array = new_matched_requests['immediate_reward'].values
+                    # TJ
+                    reward_array = new_matched_requests['designed_reward'].values
+                    # TJ
 
-            self.dispatch_transitions_buffer[0] = np.concatenate([self.dispatch_transitions_buffer[0], state_array])
-            self.dispatch_transitions_buffer[1] = np.concatenate([self.dispatch_transitions_buffer[1], action_array])
-            self.dispatch_transitions_buffer[2] = np.concatenate(
-                [self.dispatch_transitions_buffer[2], next_state_array])
-            self.dispatch_transitions_buffer[3] = np.concatenate([self.dispatch_transitions_buffer[3], reward_array])
-            #  rl for matching
+                self.dispatch_transitions_buffer[0] = np.concatenate([self.dispatch_transitions_buffer[0], state_array])
+                self.dispatch_transitions_buffer[1] = np.concatenate([self.dispatch_transitions_buffer[1], action_array])
+                self.dispatch_transitions_buffer[2] = np.concatenate(
+                    [self.dispatch_transitions_buffer[2], next_state_array])
+                self.dispatch_transitions_buffer[3] = np.concatenate([self.dispatch_transitions_buffer[3], reward_array])
+                #  rl for matching
             # update matched tracks for one time
             # self.wait_requests[]
             if self.track_recording_flag:
@@ -422,54 +476,55 @@ class Simulator:
             # generate complete information for new orders
             # weight_array = np.ones(len(self.request_database))  # rl for matching
             weight_array = np.ones(len(sampled_requests))  # rl for matching
-            original_trip_time = np.ones(len(self.request_databases)) # rl for matching
+            if self.rl_mode == 'matching':
+                original_trip_time = np.ones(len(self.request_databases)) # rl for matching
 
-            #  rl for matching
-            if self.method == 'instant_reward_no_subway':
-                for i, request in enumerate(self.request_databases):
-                    weight_array[i] = request[-2]   # deseigned_reward
-                    original_trip_time[i] = request[-3]  # trip time
-            elif self.method == 'pickup_distance':
-                for i, request in enumerate(self.request_databases):
-                    original_trip_time[i] = request[-3]
-            #  rl for matching
-            elif self.method in ['sarsa', 'sarsa_no_subway', 'sarsa_travel_time', 'sarsa_travel_time_no_subway',
-                                 'sarsa_total_travel_time', 'sarsa_total_travel_time_no_subway']:  # rl for matching
+                #  rl for matching
+                if self.method == 'instant_reward_no_subway':
+                    for i, request in enumerate(self.request_databases):
+                        weight_array[i] = request[-2]   # deseigned_reward
+                        original_trip_time[i] = request[-3]  # trip time
+                elif self.method == 'pickup_distance':
+                    for i, request in enumerate(self.request_databases):
+                        original_trip_time[i] = request[-3]
+                #  rl for matching
+                elif self.method in ['sarsa', 'sarsa_no_subway', 'sarsa_travel_time', 'sarsa_travel_time_no_subway',
+                                     'sarsa_total_travel_time', 'sarsa_total_travel_time_no_subway']:  # rl for matching
 
-                # weight array should be updated here
-                # currently without trim
-                current_time_slice = int((self.time - self.t_initial - 1) / LEN_TIME_SLICE)  # rl for matching
-                num_slices = int(LEN_TIME / LEN_TIME_SLICE)  # rl for matching
-                for i, request in enumerate(self.request_databases):  # rl for matching
-                    # origin = request[3:5]  # rl for matching
-                    # dest = request[5:7]  # rl for matching
-                    travel_time = request[-3]  # rl for matching
-                    # fare = request[7]  # rl for matching
-                    if self.method in ['sarsa_travel_time', 'sarsa_travel_time_no_subway']:
-                        reward = 5000. - request[-3]
-                    elif self.method in ['sarsa_total_travel_time', 'sarsa_total_travel_time_no_subway']:
-                        reward = 5151. - 0.5*self.maximal_pickup_distance/self.vehicle_speed - request[-3]
-                    elif self.method in ['sarsa', 'sarsa_no_subway']:  # rl for matching
-                        reward = request[-2]  # request[7] for revenue; -request[-3] for travel time  # rl for matching
-                    dest_grid_id = request[10]  # rl for matching
-                    original_trip_time[i] = request[-3]  # rl for matching
+                    # weight array should be updated here
+                    # currently without trim
+                    current_time_slice = int((self.time - self.t_initial - 1) / LEN_TIME_SLICE)  # rl for matching
+                    num_slices = int(LEN_TIME / LEN_TIME_SLICE)  # rl for matching
+                    for i, request in enumerate(self.request_databases):  # rl for matching
+                        # origin = request[3:5]  # rl for matching
+                        # dest = request[5:7]  # rl for matching
+                        travel_time = request[-3]  # rl for matching
+                        # fare = request[7]  # rl for matching
+                        if self.method in ['sarsa_travel_time', 'sarsa_travel_time_no_subway']:
+                            reward = 5000. - request[-3]
+                        elif self.method in ['sarsa_total_travel_time', 'sarsa_total_travel_time_no_subway']:
+                            reward = 5151. - 0.5*self.maximal_pickup_distance/self.vehicle_speed - request[-3]
+                        elif self.method in ['sarsa', 'sarsa_no_subway']:  # rl for matching
+                            reward = request[-2]  # request[7] for revenue; -request[-3] for travel time  # rl for matching
+                        dest_grid_id = request[10]  # rl for matching
+                        original_trip_time[i] = request[-3]  # rl for matching
 
-                    # rl for matching
-                    # score original trip
-                    end_time_slice = int((self.time + 0.5*self.maximal_pickup_distance/self.vehicle_speed + travel_time - self.t_initial - 1) / LEN_TIME_SLICE)
-                    if end_time_slice >= num_slices:
-                        original_trip_score = reward
-                    else:
-                        next_state = State(end_time_slice, int(dest_grid_id))
-                        original_trip_score = reward + (
-                                sarsa_params['discount_rate'] ** (end_time_slice - current_time_slice)) \
-                                              * score_agent.q_value_table[next_state]
-                    weight_array[i] = original_trip_score
+                        # rl for matching
+                        # score original trip
+                        end_time_slice = int((self.time + 0.5*self.maximal_pickup_distance/self.vehicle_speed + travel_time - self.t_initial - 1) / LEN_TIME_SLICE)
+                        if end_time_slice >= num_slices:
+                            original_trip_score = reward
+                        else:
+                            next_state = State(end_time_slice, int(dest_grid_id))
+                            original_trip_score = reward + (
+                                    sarsa_params['discount_rate'] ** (end_time_slice - current_time_slice)) \
+                                                  * score_agent.q_value_table[next_state]
+                        weight_array[i] = original_trip_score
 
-                    if self.method in ['sarsa_no_subway', 'sarsa_travel_time_no_subway',
-                                       'sarsa_total_travel_time_no_subway']:
-                        continue
-                    # rl for matching
+                        if self.method in ['sarsa_no_subway', 'sarsa_travel_time_no_subway',
+                                           'sarsa_total_travel_time_no_subway']:
+                            continue
+                        # rl for matching
 
             column_name = ['order_id', 'origin_id', 'origin_lat', 'origin_lng', 'dest_id', 'dest_lat', 'dest_lng',
                            'trip_distance', 'start_time', 'origin_grid_id', 'dest_grid_id', 'itinerary_node_list',
@@ -652,6 +707,113 @@ class Simulator:
         real_time_driver_table = real_time_driver_table[['driver_id','lat','lng','node_id','grid_id','status','time']]
         real_time_tracks = real_time_driver_table.set_index('driver_id').T.to_dict('list')
         self.new_tracks = {**self.new_tracks, **real_time_tracks}
+
+    # rl for repositioning
+    def generate_repo_driver_state(self):
+        con_idle = self.driver_table['status'] == 0
+        con_long_idle = con_idle & (self.driver_table['total_idle_time'] >= self.max_idle_time)
+
+        # personal state
+        new_repo_grid_array = self.driver_table.loc[con_long_idle, 'grid_id'].values
+        new_time_array = np.zeros(new_repo_grid_array.shape[0]) + self.time
+        self.state_grid_array = np.concatenate([self.state_grid_array, new_repo_grid_array])
+        self.state_time_array = np.concatenate([self.state_time_array, new_time_array])
+
+        idle_drivers_by_grid = 0
+        waiting_orders_by_grid = 0
+        if self.reposition_method == 'A2C_global_aware':
+            # record average idle vehicles and waiting requests in each grid
+            # grid_id_idle_drivers = self.driver_table.loc[
+            #                con_idle | (self.driver_table['status'] == 2), 'grid_id'].values
+            # TJ
+            grid_id_idle_drivers = self.driver_table.loc[
+                con_idle | (self.driver_table['status'] == 4), 'grid_id'].values
+            # TJ
+            indices = np.where(grid_id_idle_drivers.reshape(grid_id_idle_drivers.size, 1) == self.zone_id_array)[1]
+            kd = np.bincount(indices)
+            idle_drivers_by_grid = np.zeros(side**2)
+            idle_drivers_by_grid[:len(kd)] = kd
+
+            grid_id_wait_orders = self.wait_requests['origin_grid_id'].values
+            indices = np.where(grid_id_wait_orders.reshape(grid_id_wait_orders.size, 1) == self.zone_id_array)[1]
+            ko = np.bincount(indices)
+            waiting_orders_by_grid = np.zeros(side**2)
+            waiting_orders_by_grid[:len(ko)] = ko
+
+            # global state
+            self.global_time.append(self.time)
+            self.global_drivers_num.append(idle_drivers_by_grid)
+            self.global_orders_num.append(waiting_orders_by_grid)
+
+        self.con_long_idle = con_long_idle
+        return [new_repo_grid_array, new_time_array, idle_drivers_by_grid, waiting_orders_by_grid]
+
+    # rl for repositioning
+
+    # rl for repositioning
+    def update_repositioning_driver_status(self, action_array):
+        # update status of the drivers to be repositioned
+        if len(action_array) > 0:
+            con_long_idle = self.con_long_idle
+            grid_id_array = self.driver_table.loc[con_long_idle, 'grid_id'].values
+            indices = np.where(grid_id_array.reshape(grid_id_array.size, 1) == self.zone_id_array)[1]
+            all_directions = df_neighbor_centroid.iloc[:, 3:].values
+            dest_grid_id_array = all_directions[indices, action_array]
+            indices = np.where(dest_grid_id_array.reshape(dest_grid_id_array.size, 1) == self.zone_id_array)[1]
+            target_lng_lat_array = df_neighbor_centroid.iloc[indices, 1:3].values
+            current_lng_lat_array = self.driver_table.loc[con_long_idle, ['lng', 'lat']].values
+            repo_distance_array = distance_array(current_lng_lat_array, target_lng_lat_array)
+            repo_time_array = repo_distance_array / self.vehicle_speed
+            # self.driver_table.loc[con_long_idle, 'status'] = 2  # status 2 represents the repositioning status
+            self.driver_table.loc[con_long_idle, 'status'] = 4  # status 4 represents the repositioning status
+            self.driver_table.loc[con_long_idle, ['target_loc_lng', 'target_loc_lat']] = target_lng_lat_array
+            self.driver_table.loc[con_long_idle, 'target_grid_id'] = dest_grid_id_array
+            self.driver_table.loc[con_long_idle, 'remaining_time'] = repo_time_array
+            self.driver_table.loc[con_long_idle, 'total_idle_time'] = 0
+
+        # update final transition records
+        con_next_state_done = (self.next_state_time_array >= self.time) & (
+                    self.next_state_time_array < (self.time + self.delta_t))
+        if np.any(con_next_state_done):
+            num_action = len(action_array)
+            if num_action > 0:
+                state_time_array_pre = self.state_time_array[:-num_action]
+                state_grid_array_pre = self.state_grid_array[:-num_action]
+            else:
+                state_time_array_pre = self.state_time_array
+                state_grid_array_pre = self.state_grid_array
+            self.state_time_array_done = np.concatenate([self.state_time_array_done,
+                                                         state_time_array_pre[con_next_state_done]])
+            self.state_grid_array_done = np.concatenate([self.state_grid_array_done,
+                                                         state_grid_array_pre[con_next_state_done]])
+            self.action_array_done = np.concatenate(
+                [self.action_array_done, self.action_array[con_next_state_done]])
+            self.next_state_time_array_done = np.concatenate([self.next_state_time_array_done,
+                                                              self.next_state_time_array[con_next_state_done]])
+            self.next_state_grid_array_done = np.concatenate([self.next_state_grid_array_done,
+                                                              self.next_state_grid_array[con_next_state_done]])
+            next_grid_id_array = self.next_state_grid_array[con_next_state_done]
+            indices = np.where(next_grid_id_array.reshape(next_grid_id_array.size, 1) == self.zone_id_array)[1]
+            self.reward_array_done = np.concatenate([self.reward_array_done, self.avg_revenue_by_grid[indices]])
+            if num_action > 0:
+                self.state_time_array = np.concatenate(
+                    [state_time_array_pre[~con_next_state_done], self.state_time_array[-num_action:]])
+                self.state_grid_array = np.concatenate(
+                    [state_grid_array_pre[~con_next_state_done], self.state_grid_array[-num_action:]])
+            else:
+                self.state_time_array = state_time_array_pre[~con_next_state_done]
+                self.state_grid_array = state_grid_array_pre[~con_next_state_done]
+            self.action_array = self.action_array[~con_next_state_done]
+            self.next_state_time_array = self.next_state_time_array[~con_next_state_done]
+            self.next_state_grid_array = self.next_state_grid_array[~con_next_state_done]
+
+        # update temporary transition records
+        if len(action_array) > 0:
+            self.action_array = np.concatenate([self.action_array, action_array])
+            self.next_state_time_array = np.concatenate([self.next_state_time_array, repo_time_array + self.time])
+            self.next_state_grid_array = np.concatenate([self.next_state_grid_array, dest_grid_id_array])
+
+    # rl for repositioning
 
     def update_state(self):
         """
@@ -913,3 +1075,33 @@ class Simulator:
 
         return self.dispatch_transitions_buffer   # rl for matching
 
+    def step1(self): # rl for repositioning
+        # Step 1: bipartite matching
+        wait_requests = deepcopy(self.wait_requests)
+        driver_table = deepcopy(self.driver_table)
+        matched_pair_actual_indexes = KM_simulation(wait_requests, driver_table, self.method, self.pickup_dis_threshold)
+        self.matched_requests_num += len(matched_pair_actual_indexes)
+
+        # Step 2
+        # removed matched requests from wait list, and put them into matched list
+        # delete orders with too much waiting time
+        self.update_info_after_matching_multi_process(matched_pair_actual_indexes)
+
+        # Step 3: generate new orders
+        self.step_bootstrap_new_orders()
+
+        # Step 4: generate states of the repositioning drivers
+        state_list = self.generate_repo_driver_state()   # rl for repositioning
+
+        return state_list   # rl for repositioning
+
+    def step2(self, action_array):  # rl for repositioning
+        # Step 5: update repositioning driver status
+        action_array = action_array.astype(int)  # rl for repositioning
+        self.update_repositioning_driver_status(action_array)  # rl for repositioning
+
+        # Step 6: update next state and time
+        self.update_state()
+        self.update_time()
+
+        return

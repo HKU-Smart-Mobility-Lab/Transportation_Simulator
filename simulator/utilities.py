@@ -39,6 +39,9 @@ radius = max(abs(env_params['east_lng'] - env_params['west_lng']) / 2,
 side = env_params['side']
 interval = 2 * radius / side
 
+
+
+
 """
 Here, we build the connection to mongodb, which will be used to speed up access to road network information.
 """
@@ -78,6 +81,80 @@ for i in range(len(result)):
     nodelist.append(get_zone(lat_list[i], lng_list[i]))
 result['grid_id'] = nodelist
 
+
+"""Generate the available directions for each grid"""
+df_available_directions = pd.DataFrame(columns=['zone_id','direction_0','direction_1','direction_2','direction_3','direction_4'])
+df_neighbor_centroid = pd.DataFrame()
+direction_1_list = []   # up
+direction_2_list = []   # down
+direction_3_list = []   # left
+direction_4_list = []   # right
+
+direction0_available_list = [i for i in range(side**2)] # stay
+direction1_available_list = [] # up
+direction2_available_list = [] # down
+direction3_available_list = [] # left
+direction4_available_list = [] # right
+centroid_lng_list = []
+centroid_lat_list = []
+
+for i in range(side**2):
+
+    centroid_lng_list.append(result[result['grid_id']==i]['lng'])
+    centroid_lat_list.append(result[result['grid_id']==i]['lat'])
+    # up
+    if math.ceil(i / side) == 0:
+        direction_1_list.append(0)
+        direction1_available_list.append(np.nan)
+    else:
+        direction_1_list.append(1)
+        direction1_available_list.append(i-side)
+
+
+    # down
+    if math.ceil(i / side) == side - 1:
+        direction_2_list.append(0)
+        direction2_available_list.append(np.nan)
+    else:
+        direction_2_list.append(1)
+        direction_2_list.append(i + side)
+
+
+
+    # left
+    if i % side == 0:
+        direction_3_list.append(0)
+        direction3_available_list.append(np.nan)
+    else:
+        direction_3_list.append(1)
+        direction3_available_list.append(i-1)
+
+    # right
+    if i % side == side -1:
+        direction_4_list.append(0)
+        direction4_available_list.append(np.nan)
+    else:
+        direction_4_list.append(1)
+        direction4_available_list.append(i+1)
+
+df_available_directions['zone_id'] = [i for i in range(side**2)]
+df_available_directions['direction_0'] = 1
+df_available_directions['direction_1'] = direction_1_list
+df_available_directions['direction_2'] = direction_2_list
+df_available_directions['direction_3'] = direction_3_list
+df_available_directions['direction_4'] = direction_4_list
+
+df_neighbor_centroid['zone_id'] = direction0_available_list
+df_neighbor_centroid['centroid_lng'] = centroid_lng_list
+df_neighbor_centroid['centroid_lat'] = centroid_lat_list
+df_neighbor_centroid['stay'] = direction0_available_list
+df_neighbor_centroid['up'] = direction1_available_list
+df_neighbor_centroid['right'] = direction4_available_list
+df_neighbor_centroid['down'] = direction2_available_list
+df_neighbor_centroid['left'] = direction3_available_list
+
+
+KM_simulation
 # print(time.time()-t)
 
 # rl for matching
@@ -105,6 +182,39 @@ def get_exponential_epsilons(initial_epsilon, final_epsilon, steps, decay=0.99, 
 
     return np.array(epsilons)
 # rl for matching
+
+# rl for repositioning
+def s2e(n, total_len = 14):
+    n = n.astype(int)
+    k = (((n[:,None] & (1 << np.arange(total_len))[::-1])) > 0).astype(np.float64)
+    return k
+# rl for repositioning
+
+# rl for repositioning
+def get_exponential_epsilons(initial_epsilon, final_epsilon, steps, decay=0.99, pre_steps=10):
+    """
+    obtain exponential decay epsilons
+    :param initial_epsilon:
+    :param final_epsilon:
+    :param steps:
+    :param decay: decay rate
+    :param pre_steps: first several epsilons does note decay
+    :return:
+    """
+    epsilons = []
+
+    # pre randomness
+    for i in range(0, pre_steps):
+        epsilons.append(deepcopy(initial_epsilon))
+
+    # decay randomness
+    epsilon = initial_epsilon
+    for i in range(pre_steps, steps):
+        epsilon = max(final_epsilon, epsilon * decay)
+        epsilons.append(deepcopy(epsilon))
+
+    return np.array(epsilons)
+# rl for repositioning
 
 def distance(coord_1, coord_2):
     """

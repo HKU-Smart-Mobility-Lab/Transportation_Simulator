@@ -8,7 +8,7 @@ from tqdm import tqdm
 import warnings
 warnings.filterwarnings("ignore")
 import os
-from utilities import get_exponential_epsilons
+from utilities import *
 from sarsa import SarsaAgent
 # python D:\Feng\drl_subway_comp\main.py
 
@@ -233,6 +233,8 @@ if __name__ == "__main__":
                             file.write(str(time.time()-t)+'\n')
 
                         elif env_params.rl_mode == "reposition":
+                            len_time_binary = 8
+                            len_grid_binary = 7
                             if simulator.experiment_mode == 'train':
                                 epsilons = get_exponential_epsilons(INIT_EPSILON, FINAL_EPSILON, NUM_EPOCH, decay=DECAY,
                                                                     pre_steps=PRE_STEP)
@@ -244,7 +246,7 @@ if __name__ == "__main__":
                                 # 37 is the length of global state vetors, equal to the numeber of grids
                                 if simulator.reposition_method == 'A2C':
                                     agent_params = dict(action_dim=5, state_dim=(len_time_binary + len_grid_binary),
-                                                        available_directions=simulator.GS.df_available_directions,
+                                                        available_directions=df_available_directions,
                                                         load_model=False, discount_factor=DISCOUNT_FACTOR,
                                                         actor_lr=ACTOR_LR, critic_lr=CRITIC_LR,
                                                         actor_structure=ACTOR_STRUCTURE,
@@ -252,8 +254,8 @@ if __name__ == "__main__":
                                                         model_name=simulator.reposition_method)
                                 elif simulator.reposition_method == 'A2C_global_aware':
                                     agent_params = dict(action_dim=5, state_dim=(
-                                                len_time_binary + len_grid_binary + 2 * simulator.GS.num_grid),
-                                                        available_directions=simulator.GS.df_available_directions,
+                                                len_time_binary + len_grid_binary + 2 * side**2),
+                                                        available_directions=df_available_directions,
                                                         load_model=False, discount_factor=DISCOUNT_FACTOR,
                                                         actor_lr=ACTOR_LR,
                                                         critic_lr=CRITIC_LR,

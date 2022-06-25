@@ -42,7 +42,8 @@ env_params = {
 'east_lng': -74.0831,
 'west_lng': -73.8414,
 'rl_mode': 'reposition',  # reposition and matching
-'method': 'sarsa_no_subway'  #  'sarsa_no_subway' / 'pickup_distance' / 'instant_reward_no_subway'   #  rl for matching
+'method': 'sarsa_no_subway',  #  'sarsa_no_subway' / 'pickup_distance' / 'instant_reward_no_subway'   #  rl for matching
+'reposition_method': 'A2C_global_aware',  # A2C, A2C_global_aware, random_cruise, stay  # rl for repositioning
 }
 
 #  rl for matching

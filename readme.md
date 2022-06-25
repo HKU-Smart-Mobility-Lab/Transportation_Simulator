@@ -1,12 +1,12 @@
 ### An Open-Sourced Network-Based Large-Scale Simulation Platform for Shared Mobility Operations
 
-https://img.shields.io/badge/<build>-<passing>-<green>
+https://img.shields.io/badge/build-passing-green
 
-https://img.shields.io/badge/<python>-<3>-<blue>
+https://img.shields.io/badge/python-3-blue
 
-https://img.shields.io/badge/<release>-<2.0>-<green>
+https://img.shields.io/badge/release-2.0-green
 
-https://img.shields.io/badge/<license>-<MIT>-<green>
+https://img.shields.io/badge/license-MIT-green
 
 
 
