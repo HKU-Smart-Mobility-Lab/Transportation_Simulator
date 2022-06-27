@@ -423,7 +423,7 @@ class road_network:
         self.params = kwargs
 
 
-    def load_data(self, data_path, file_name):
+    def load_data(self):
         """
         :param data_path: the path of road_network file
         :type data_path:  string
@@ -433,8 +433,6 @@ class road_network:
         :rtype:  None
         """
         # 路网格式：节点数字编号（从0开始），节点经度，节点纬度，所在grid id
-        # columns = ['node_id', 'lng', 'lat', 'grid_id']
-        # self.df_road_network = pickle.load(open(data_path + file_name, 'rb'))
         self.df_road_network = result
 
 
