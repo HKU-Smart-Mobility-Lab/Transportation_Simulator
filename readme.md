@@ -20,23 +20,23 @@ Establish an open-sourced network-based simulation platform for shared mobility 
 
 ```
 -simulator
-	--input
-    ---graph.graphml
-    ---order.pickle
-    ---driver_info.pickle
-  --output
-  	---
- 	--driver_generation.py
- 	--handle_raw_data.py
- 	--find_closest_point.py
- 	--simulator_pattern.py
- 	--simulator_env.py
- 	--A2C.py
- 	--sarsa.py
- 	--main.py
- 	--config.py
- 	--LICENSE.md
- 	--readme.md
+--input
+---graph.graphml
+---order.pickle
+---driver_info.pickle
+--output
+--- some output files 
+--driver_generation.py
+--handle_raw_data.py
+--find_closest_point.py
+--simulator_pattern.py
+--simulator_env.py
+--A2C.py
+--sarsa.py
+--main.py
+--config.py
+--LICENSE.md
+--readme.md
  	
 ```
 
