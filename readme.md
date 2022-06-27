@@ -21,12 +21,13 @@ Establish an open-sourced network-based simulation platform for shared mobility 
 ```
 -simulator
 --input
-  ---graph.graphml
-  ---order.pickle
-  ---driver_info.pickle
+---graph.graphml
+---order.pickle
+---driver_info.pickle
 --output
-  --- some output files 
+--- some output files 
 --driver_generation.py
+--dispatch_alg.py
 --handle_raw_data.py
 --find_closest_point.py
 --simulator_pattern.py
@@ -96,11 +97,11 @@ In [config.py](https://github.com/HKU-Smart-Mobility-Lab/Transpotation_Simulator
 
 ##### Real Road Network Module
 
-
+We use [osmnx](https://pypi.org/project/osmnx/) to acquire the shortest path from the real world. You can set 'north_lat', 'south_lat', 'east_lng' and 'west_lng' in [config.py](https://github.com/HKU-Smart-Mobility-Lab/Transpotation_Simulator/blob/main/simulator/config.py) , and you can get road network for the specified region.
 
 ##### Price Module
 
-### 
+You can set the maximum order price that is normally distributed and acceptable to passengers by modifing `maximum_price_passenger_can_tolerate_mean'` and `maximum_price_passenger_can_tolerate_std`.
 
 ##### Cruising and Repositioning Module
 
@@ -108,7 +109,7 @@ In [config.py](https://github.com/HKU-Smart-Mobility-Lab/Transpotation_Simulator
 
 ##### Dispatching Module
 
-
+In dispatch_alg.py, we implement the function LD, we use binary map matching algorithm to dispatch orders.
 
 ##### Experiment
 
