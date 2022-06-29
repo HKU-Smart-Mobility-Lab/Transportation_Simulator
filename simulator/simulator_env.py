@@ -154,7 +154,7 @@ class Simulator:
         request_list = []
         for i in range(env_params['t_initial'],env_params['t_end']):
             try:
-                for j in self.request_all[i]:
+                for j in self.request_databases[i]:
                     request_list.append(j)
             except:
                 print("no order at time {}".format(i))
