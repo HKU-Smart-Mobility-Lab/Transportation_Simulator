@@ -99,6 +99,22 @@ In [config.py](https://github.com/HKU-Smart-Mobility-Lab/Transpotation_Simulator
 
 We use [osmnx](https://pypi.org/project/osmnx/) to acquire the shortest path from the real world. You can set 'north_lat', 'south_lat', 'east_lng' and 'west_lng' in [config.py](https://github.com/HKU-Smart-Mobility-Lab/Transpotation_Simulator/blob/main/simulator/config.py) , and you can get road network for the specified region.
 
+##### Mongodb Module
+
+If your road network is huge, yu can use mongodb to store the road network information and add index on node id which uniquely identifies a node on the road network.
+You can use the following code to connect your local database route_network and collection route_list which stores the information. After that, you can use find_one interface to achieve the shortest path list easily. 
+```python
+myclient = pymongo.MongoClient("mongodb://localhost:27017/")
+mydb = myclient["route_network"]
+mycollect = mydb['route_list']
+
+re_data = {
+            'node': str(ori_id) + str(dest_id)
+        }
+re = mycollect.find_one(re_data)
+```
+
+
 ##### Price Module
 
 You can set the maximum order price that is normally distributed and acceptable to passengers by modifing `maximum_price_passenger_can_tolerate_mean'` and `maximum_price_passenger_can_tolerate_std`.
