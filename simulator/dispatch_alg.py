@@ -4,7 +4,7 @@ import pickle
 from copy import deepcopy
 
 def LD(dispatch_observ):
-    columns_name = ['order_id', 'driver_id', 'reward_units', 'order_driver_flag']
+    columns_name = ['order_id', 'driver_id', 'order_driver_flag','reward_units']
     #dic_dispatch_observ = dispatch_observ.copy()
     dispatch_observ = pd.DataFrame(dispatch_observ, columns=columns_name)
     dispatch_observ['reward_units'] = 0. + dispatch_observ['reward_units'].values
