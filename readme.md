@@ -6,6 +6,16 @@
 
 Establish an open-sourced network-based simulation platform for shared mobility operations. The simulation explicitly characterizes drivers’ movements on road networks for trip delivery, idle cruising, and en-route pick-up. 
 
+
+
+### Contributions
+
+• We develop a comprehensive, multi-functional and open-sourced simulator for ride-sourcing service, which can be used by both researchers and industrial practitioners on a variety of operational tasks. The proposed simulation platform overcomes a few challenges faced by previous simulators, including the closeness to reality, representation of customers’ and drivers’ heterogeneous behaviors, generalization for different tasks. 
+
+• The simulator provide interfaces for the training and testing of different tasks, such as testing of optimization algorithms, training/testing of reinforcement learning based approaches for matching and repositioning, evaluations of economic models for equilibrium analysis and operational strategy designs. 
+
+• Based on a vehicle utilization based validation task, some RL based experiments, and one task for theoretical model evaluation, the simulator is validated to be effective and efficient for ride-sourcing related researches. In the future, the simulator can be easily modified for completing other tasks, such as dynamic pricing, ride-pooling service operations, control of shared autonomous vehicles, etc.
+
 ### Install
 
 1. Download the code.
@@ -146,17 +156,27 @@ We welcome your contributions.
 - Please report bugs and improvements by submitting [GitHub issue](https://github.com/HKU-Smart-Mobility-Lab/Transpotation_Simulator/issues).
 - Submit your contributions using [pull requests](https://github.com/HKU-Smart-Mobility-Lab/Transpotation_Simulator/pulls). 
 
-### Citing
-
-If you use this simulator for academic research, you are highly encouraged to cite our paper:
-
-An Open-Sourced Network-Based Large-Scale Simulation Platform for Shared Mobility Operations
-
 
 
 ### Contributors
 
-This simulator is supported by the [Smart Mobility Lab](	https://github.com/HKU-Smart-Mobility-Lab) at The Univerisity of Hong Kong.
+This simulator is supported by the [Smart Mobility Lab](	https://github.com/HKU-Smart-Mobility-Lab) at The Univerisity of Hong Kong and Intelligent Transportation Systems (ITS) Laboratory at The Hong Kong University of Science and Technology.
+
+
+
+### Ownership
+
+The ownership of this repository is Prof. Hai Yang, Dr. Siyuan Feng from ITS Lab at The Hong Kong University of Science and Technology and Dr. Jintao Ke from SML at The Univerisity of Hong Kong.
+
+###  Citing
+
+If you use this simulator for academic research, you are highly encouraged to cite our paper:
+
+Feng, S., Chen, T., Zhang, Y., Ke, J., & Yang, H. (2023). A multi-functional simulation platform for on-demand ride service operations.
+
+
+
+
 
 
 
