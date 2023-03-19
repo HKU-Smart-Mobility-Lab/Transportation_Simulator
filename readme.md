@@ -160,7 +160,7 @@ We welcome your contributions.
 
 ### Contributors
 
-This simulator is supported by the [Smart Mobility Lab](	https://github.com/HKU-Smart-Mobility-Lab) at The Univerisity of Hong Kong and Intelligent Transportation Systems (ITS) Laboratory at The Hong Kong University of Science and Technology.
+This simulator is supported by the [Smart Mobility Lab](	https://github.com/HKU-Smart-Mobility-Lab) at The Univerisity of Hong Kong and [Intelligent Transportation Systems (ITS) Laboratory](https://sites.google.com/view/hkustits/home) at The Hong Kong University of Science and Technology.
 
 
 
