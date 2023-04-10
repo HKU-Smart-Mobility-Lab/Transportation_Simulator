@@ -24,7 +24,8 @@ Establish an open-sourced network-based simulation platform for shared mobility 
 
 2. Download the dependencies and libraries.
 
-`pip install -r requirements.txt`
+`pip install -r requirements.txt` or
+`conda env create -f environment.yaml`
 
 ### File Structure
 
