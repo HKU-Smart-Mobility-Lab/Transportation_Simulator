@@ -27,6 +27,9 @@ Establish an open-sourced network-based simulation platform for shared mobility 
 `pip install -r requirements.txt` or
 `conda env create -f environment.yaml`
 
+### Download Data
+Here, we provide you data that we used in our experiments. You can download it from Onedrive.(https://connecthkuhk-my.sharepoint.com/personal/ctj21_connect_hku_hk/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fctj21%5Fconnect%5Fhku%5Fhk%2FDocuments%2FTransportation%5FSimulator&ga=1).
+
 ### File Structure
 
 ```
