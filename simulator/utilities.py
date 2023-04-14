@@ -666,6 +666,7 @@ def order_dispatch(wait_requests, driver_table, maximal_pickup_distance=950, dis
 def driver_online_offline_decision(driver_table, current_time):
 
     # 注意pickup和delivery driver不应当下线
+    # 车辆状态：0 cruise (park 或正在cruise)， 1 表示delivery，2 pickup, 3 表示下线, 4 reposition
     new_driver_table = driver_table
     return new_driver_table
 
