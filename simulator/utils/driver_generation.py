@@ -8,6 +8,10 @@ from utilities import *
 from find_closest_point import *
 import sys
 
+'''
+    This util script was under 'simulator', now it is in 'simulator/test'. You may need
+    to update path related codes in order to successfully run the code without errors.
+'''
 
 #Driver file
 df_driver_info = pd.DataFrame(columns = ['driver_id', 'start_time', 'end_time', 'lng', 'lat','node_id' 'grid_id', 'status',

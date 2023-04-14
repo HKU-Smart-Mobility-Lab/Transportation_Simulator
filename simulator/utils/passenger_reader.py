@@ -2,6 +2,11 @@ import pandas as pd
 from path import *
 import pickle
 
+'''
+    This util script was under 'simulator', now it is in 'simulator/test'. You may need
+    to update path related codes in order to successfully run the code without errors.
+'''
+
 filename = "dataset.csv"
 data = pd.read_csv(data_path + "input/"+ filename)
 print(len(data['ID']))

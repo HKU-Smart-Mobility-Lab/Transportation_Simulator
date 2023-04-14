@@ -7,16 +7,16 @@ def calculate_match_rate():
     driver_num = [500, 1000, 1500, 2000, 2500, 3000]
     max_distance_num = [0.5, 1, 2, 3, 4]
     count = 0
-    orders = pickle.load(open('./input/order.pickle', 'rb'))
+    orders = pickle.load(open('../input/order.pickle', 'rb'))
     for time in range(36000, 79200):
         if time in orders.keys():
             count += len(orders[time])
-    file = open('./output/match_rate.txt', 'w')
+    file = open('../output/match_rate.txt', 'w')
     for item in driver_num:
         for item2 in max_distance_num:
 
             records = pickle.load(
-                open('./output/records_driver_num_' + str(item) + '_distance_' + str(item2) + '.pickle', 'rb'))
+                open('../output/records_driver_num_' + str(item) + '_distance_' + str(item2) + '.pickle', 'rb'))
             matched = 0
             print(count)
             for i,time in enumerate(records):
@@ -37,7 +37,7 @@ def calculate_match_rate():
 
 
 def delete_none_order():
-    data = pickle.load(open('./input/order.pickle', 'rb'))
+    data = pickle.load(open('../input/order.pickle', 'rb'))
     # lng = data['lat'].values.tolist()
     # for item in lng:
     #     if item == 40.71561:
@@ -47,7 +47,7 @@ def delete_none_order():
         for order in data[time]:
             test = (order[2], order[3])
 
-    pickle.dump(data, open('./input/order.pickle','wb'))
+    pickle.dump(data, open('../input/order.pickle','wb'))
 
 
 if __name__ == '__main__':

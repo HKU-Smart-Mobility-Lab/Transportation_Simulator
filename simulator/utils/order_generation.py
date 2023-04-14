@@ -7,6 +7,12 @@
 @email: yuhaozhang76@gmail.com
 @desc: 
 """
+
+'''
+    This util script was under 'simulator', now it is in 'simulator/test'. You may need
+    to update path related codes in order to successfully run the code without errors.
+'''
+
 from find_closest_point import find_closest_point
 from utilities import get_zone
 import pandas as pd
@@ -66,7 +72,7 @@ def csv_to_pickle(input_file, output_file):
 
 
 def nyu_add_node_id_grid():
-    raw_data = pickle.load(open('./input/requests_real_data.pickle', 'rb'))
+    raw_data = pickle.load(open('../input/requests_real_data.pickle', 'rb'))
     day = '2015-07-01'
     data = raw_data[day]
     results = {}
@@ -95,10 +101,10 @@ def nyu_add_node_id_grid():
                        dest_id, ori_grid_id, dest_grid_id, itenerary_list, [], 1, 0]
 
             results[minute].append(records)
-    pickle.dump(results, open('./output/nyu_07_01.pickle', 'wb'))
+    pickle.dump(results, open('../output/nyu_07_01.pickle', 'wb'))
 
 
 if __name__ == '__main__':
-    output_file = './output/multi_thread_order.pickle'
+    output_file = '../output/multi_thread_order.pickle'
     csv_to_pickle('multi_thread.csv', output_file)
     # nyu_add_node_id_grid()

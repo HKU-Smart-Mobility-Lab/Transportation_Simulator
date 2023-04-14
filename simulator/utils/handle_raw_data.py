@@ -16,14 +16,18 @@ from math import cos,acos
 from datetime import datetime
 from dateutil import parser
 import numpy as np
+
+'''
+    This util script was under 'simulator', now it is in 'simulator/test'. You may need
+    to update path related codes in order to successfully run the code without errors.
+'''
+
 env_params = {
     'north_lat': 40.8845,
     'south_lat': 40.6968,
     'east_lng': -74.0831,
     'west_lng': -73.8414
 }
-
-
 
 G = ox.load_graphml('./input/graph.graphml')
 gdf_nodes, gdf_edges = ox.graph_to_gdfs(G)

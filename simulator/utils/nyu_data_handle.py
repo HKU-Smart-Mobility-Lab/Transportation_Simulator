@@ -7,6 +7,12 @@
 @email: yuhaozhang76@gmail.com
 @desc: 
 """
+
+'''
+    This util script was under 'simulator', now it is in 'simulator/test'. You may need
+    to update path related codes in order to successfully run the code without errors.
+'''
+
 import pandas as pd
 from tqdm import tqdm
 from find_closest_point import find_closest_point
@@ -61,6 +67,6 @@ def transform_data_from_nyu_to_one_month(input_file, output_file):
 
 if __name__ == '__main__':
     # input_path = './input/yellow_tripdata_2014-01.csv'
-    input_path = './input/test.csv'
-    output_path = './output/dataset.csv'
+    input_path = '../input/test.csv'
+    output_path = '../output/dataset.csv'
     transform_data_from_nyu_to_one_month(input_path, output_path)

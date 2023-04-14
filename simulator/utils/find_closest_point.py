@@ -1,5 +1,15 @@
 
 import osmnx as ox
+import sys
+sys.path.append('..') # move sys path to parent directory to import statistic
+
+'''
+    This util script was under 'simulator', now it is in 'simulator/test'. You may need
+    to update path related codes in order to successfully run the code without errors.
+
+    sys.path to simulator is updated above. You may want to modify path if something goes wrong
+'''
+
 from config import *
 # this function is to find the cloeset point in openstreetmap to real point.
 # return a tuple(latitude,longitude)

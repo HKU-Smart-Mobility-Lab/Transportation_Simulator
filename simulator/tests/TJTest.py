@@ -1,15 +1,25 @@
 import os
+import sys
+sys.path.append('..') # move sys path to parent directory to import statistic
 
-from statistic import get_matching_rate
-from statistic import get_avg_prematching_waiting_time
-from statistic import get_driver_delivery_time,get_driver_delivery_ratio
-from statistic import get_postmatching_pickup_time,get_driver_pickup_ratio
+'''
+    This util script was under 'simulator', now it is in 'simulator/test'. You may need
+    to update path related codes in order to successfully run the code without errors.
+
+    sys.path to simulator is updated above. You may want to modify path if something goes wrong
+'''
+
+from utils.statistic import get_matching_rate
+from utils.statistic import get_avg_prematching_waiting_time
+from utils.statistic import get_driver_delivery_time,get_driver_delivery_ratio
+from utils.statistic import get_postmatching_pickup_time,get_driver_pickup_ratio
 import sys
 import pickle
 import pandas as pd
 from config import env_params
 from tqdm import tqdm
-order = pickle.load(open("input/order.pickle",'rb'))
+
+order = pickle.load(open("../input/order.pickle",'rb'))
 # column_name = ['order_id', 'origin_id', 'origin_lat', 'origin_lng', 'dest_id', 'dest_lat', 'dest_lng',
 #                            'trip_distance', 'start_time', 'origin_grid_id', 'dest_grid_id', 'itinerary_node_list',
 #                            'itinerary_segment_dis_list', 'trip_time', 'designed_reward', 'cancel_prob']
@@ -24,7 +34,7 @@ order = pickle.load(open("input/order.pickle",'rb'))
 # print(get_driver_pickup_ratio(records,36000,79200,500))
 # print(get_driver_usage_rate(records,36000,79200,500))
 
-path = "./output3"
+path = "../output3"
 files = os.listdir(path)
 files.sort()
 # print(files)

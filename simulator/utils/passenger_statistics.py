@@ -6,8 +6,13 @@ import numpy as np
 from matplotlib import pyplot as plt
 from config import *
 
-passenger_pd = pickle.load(open("./output3/ma_ma_cruise=False/passenger_records_driver_num_1000.pickle",'rb'))
-order = pickle.load(open("input/order.pickle",'rb'))
+'''
+    This util script was under 'simulator', now it is in 'simulator/test'. You may need
+    to update path related codes in order to successfully run the code without errors.
+'''
+
+passenger_pd = pickle.load(open("../output3/ma_ma_cruise=False/passenger_records_driver_num_1000.pickle",'rb'))
+order = pickle.load(open("../input/order.pickle",'rb'))
 matched_pd = passenger_pd[passenger_pd['matching_time'] != 0]
 
 

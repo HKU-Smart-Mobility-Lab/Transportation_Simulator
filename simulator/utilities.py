@@ -5,7 +5,7 @@ from copy import deepcopy
 import random
 from random import choice
 from dispatch_alg import LD
-from math import radians, sin, atan2
+from math import radians, sin, atan2, cos, acos
 from config import *
 import math
 import pickle
@@ -152,10 +152,6 @@ df_neighbor_centroid['up'] = direction1_available_list
 df_neighbor_centroid['right'] = direction4_available_list
 df_neighbor_centroid['down'] = direction2_available_list
 df_neighbor_centroid['left'] = direction3_available_list
-
-
-KM_simulation
-# print(time.time()-t)
 
 # rl for matching
 def get_exponential_epsilons(initial_epsilon, final_epsilon, steps, decay=0.99, pre_steps=10):
@@ -667,6 +663,11 @@ def driver_online_offline_decision(driver_table, current_time):
 
     # 注意pickup和delivery driver不应当下线
     # 车辆状态：0 cruise (park 或正在cruise)， 1 表示delivery，2 pickup, 3 表示下线, 4 reposition
+    # This function is aimed to switch the driver states between 0 and 3, based on the 'start_time' and 'end_time' of drivers
+    # Notice that we should not change the state of delievery and pickup drivers, since they are occopied. 
+    online_driver_table = driver_table.loc[(driver_table['start_time'] <= current_time) & (driver_table['end_time'] > current_time)]
+    offline_driver_table = driver_table[~driver_table.isin(online_driver_table)]
+    print(f'online count: {len(online_driver_table)}, offline count: {len(offline_driver_table)}, total count: {len(driver_table)}')
     new_driver_table = driver_table
     return new_driver_table
 
