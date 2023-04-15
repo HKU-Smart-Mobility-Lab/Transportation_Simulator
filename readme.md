@@ -33,25 +33,29 @@ Here, we provide you data for Manhattan that we used in our experiments. You can
 ### File Structure
 
 ```
--simulator
---input
----graph.graphml
----order.pickle
----driver_info.pickle
---output
---- some output files 
---driver_generation.py
---dispatch_alg.py
---handle_raw_data.py
---find_closest_point.py
---simulator_pattern.py
---simulator_env.py
---A2C.py
---sarsa.py
---main.py
---config.py
---LICENSE.md
---readme.md
+- simulator
+-- input
+  -- graph.graphml
+  -- order.pickle
+  -- driver_info.pickle
+-- output
+  -- some output files
+-- test
+  -- test scripts
+-- utils
+  -- driver_generation.py
+  -- find_closest_point.py
+  -- handle_raw_data.py
+-- dispatch_alg.py
+-- simulator_pattern.py
+-- simulator_env.py
+-- A2C.py
+-- sarsa.py
+-- main.py
+-- config.py
+-- LICENSE.md
+-- api_doc.md
+- readme.md
 ```
 
 ##### Data preparing
