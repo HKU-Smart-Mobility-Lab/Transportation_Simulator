@@ -5,7 +5,7 @@ from copy import deepcopy
 import random
 from random import choice
 from dispatch_alg import LD
-from math import radians, sin, atan2, cos, acos
+from math import radians, sin, atan2,cos,acos
 from config import *
 import math
 import pickle
@@ -16,8 +16,8 @@ import sys
 from collections import Counter
 import pymongo
 import time
-
-
+import scipy.stats as st
+from scipy.stats import skewnorm
 """
 Here, we load the information of graph network from graphml file.
 """
@@ -30,7 +30,7 @@ node_id_to_lat_lng = {}
 node_coord_to_id = {}
 for i in range(len(lat_list)):
     node_id_to_lat_lng[node_id[i]] = (lat_list[i], lng_list[i])
-    node_coord_to_id[(lat_list[i], lng_list[i])] = node_id[i]
+    node_coord_to_id[(lng_list[i], lat_list[i])] = node_id[i]
 
 center = (
 (env_params['east_lng'] + env_params['west_lng']) / 2, (env_params['north_lat'] + env_params['south_lat']) / 2)
@@ -103,7 +103,7 @@ for i in range(side**2):
     centroid_lng_list.append(result[result['grid_id']==i]['lng'])
     centroid_lat_list.append(result[result['grid_id']==i]['lat'])
     # up
-    if math.ceil(i / side) == 0:
+    if math.floor(i / side) == 0:
         direction_1_list.append(0)
         direction1_available_list.append(np.nan)
     else:
@@ -112,12 +112,12 @@ for i in range(side**2):
 
 
     # down
-    if math.ceil(i / side) == side - 1:
+    if math.floor(i / side) == side - 1:
         direction_2_list.append(0)
         direction2_available_list.append(np.nan)
     else:
         direction_2_list.append(1)
-        direction_2_list.append(i + side)
+        direction2_available_list.append(i + side)
 
 
 
@@ -152,6 +152,7 @@ df_neighbor_centroid['up'] = direction1_available_list
 df_neighbor_centroid['right'] = direction4_available_list
 df_neighbor_centroid['down'] = direction2_available_list
 df_neighbor_centroid['left'] = direction3_available_list
+
 
 # rl for matching
 def get_exponential_epsilons(initial_epsilon, final_epsilon, steps, decay=0.99, pre_steps=10):
@@ -223,8 +224,8 @@ def distance(coord_1, coord_2):
     """
     manhattan_dis = 0
     try:
-        lat1, lon1, = coord_1
-        lat2, lon2 = coord_2
+        lon1,lat1 = coord_1
+        lon2,lat2  = coord_2
         lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
         r = 6371
         lat_dis = r * acos(min(1.0, cos(lat1) ** 2 * cos(lon1 - lon2) + sin(lat1) ** 2))
@@ -250,18 +251,27 @@ def distance_array(coord_1, coord_2):
     :return: the array of manhattan distance of these two-point pair
     :rtype: numpy.array
     """
-    manhattan_dis = list()
-    for i in range(len(coord_1)):
-        manhattan_dis = 0
-        lat1, lon1, = coord_1[i]
-        lat2, lon2 = coord_2[i]
-        lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
-        r = 6371
-        lat_dis = r * acos(min(1.0, cos(lat1) ** 2 * cos(lon1 - lon2) + sin(lat1) ** 2))
-        lon_dis = r * (lat2 - lat1)
-        manhattan_dis.append((abs(lat_dis) ** 2 + abs(lon_dis) ** 2) ** 0.5)
-    return manhattan_dis
-
+    # manhattan_dis = list()
+    # for i in range(len(coord_1)):
+    #     lon1,lat1 = coord_1[i]
+    #     lon2,lat2 = coord_2[i]
+    #     lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
+    #     r = 6371
+    #     lat_dis = r * acos(min(1.0, cos(lat1) ** 2 * cos(lon1 - lon2) + sin(lat1) ** 2))
+    #     lon_dis = r * (lat2 - lat1)
+    #     manhattan_dis.append((abs(lat_dis) ** 2 + abs(lon_dis) ** 2) ** 0.5)
+    # return np.array(manhattan_dis)
+    coord_1 = np.array(coord_1).astype(float)
+    coord_2 = np.array(coord_2).astype(float)
+    coord_1_array = np.radians(coord_1)
+    coord_2_array = np.radians(coord_2)
+    dlon = coord_2_array[:, 0] - coord_1_array[:, 0]
+    dlat = coord_2_array[:, 1] - coord_1_array[:, 1]
+    a = np.sin(dlat / 2) ** 2 + np.cos(coord_1_array[:, 1]) * np.cos(coord_2_array[:, 1]) * np.sin(dlon / 2) ** 2
+    c = 2 * np.arcsin(a ** 0.5)
+    r = 6371
+    distance = c * r
+    return distance
 
 def get_distance_array(origin_coord_array, dest_coord_array):
     """
@@ -304,12 +314,12 @@ def route_generation_array(origin_coord_array, dest_coord_array, mode='rg'):
     # itinerary_node_list的每一项为一个list，包含了对应路线中的各个节点编号
     # itinerary_segment_dis_list的每一项为一个array，包含了对应路线中的各节点到相邻下一节点的距离
     # dis_array包含了各行程的总里程
-    origin_node_list = get_nodeId_from_coordinate(origin_coord_array[:, 1], origin_coord_array[:, 0])
-    dest_node_list = get_nodeId_from_coordinate(dest_coord_array[:, 1], dest_coord_array[:, 0])
+    origin_node_list = get_nodeId_from_coordinate(origin_coord_array[:, 0], origin_coord_array[:, 1])
+    dest_node_list = get_nodeId_from_coordinate(dest_coord_array[:, 0], dest_coord_array[:, 1])
     itinerary_node_list = []
     itinerary_segment_dis_list = []
     dis_array = []
-    if mode == 'ma':
+    if mode == 'ma':     
         for origin, dest in zip(origin_node_list, dest_node_list):
             itinerary_node_list.append([dest])
             dis = distance(node_id_to_lat_lng[origin], node_id_to_lat_lng[dest])
@@ -495,7 +505,7 @@ def sample_all_drivers(driver_info, t_initial, t_end, driver_sample_ratio=1, dri
     """
     # 当前并无随机抽样司机；后期若需要，可设置抽样模块生成sampled_driver_info
     new_driver_info = deepcopy(driver_info)
-    sampled_driver_info = new_driver_info
+    sampled_driver_info = new_driver_info.sample(frac=driver_sample_ratio)
     sampled_driver_info['status'] = 3
     loc_con = sampled_driver_info['start_time'] <= t_initial
     sampled_driver_info.loc[loc_con, 'status'] = 0
@@ -558,7 +568,7 @@ def reposition(eligible_driver_table, mode):
 
 
 
-def cruising(eligible_driver_table, mode):
+def cruising(eligible_driver_table, mode,grid_value ={}):
     """
     :param eligible_driver_table: information of eligible driver.
     :type eligible_driver_table: pandas.DataFrame
@@ -572,8 +582,19 @@ def cruising(eligible_driver_table, mode):
     dest_array = []
     grid_id_list = eligible_driver_table.loc[:, 'grid_id'].values
     for grid_id in (grid_id_list):
-        if mode == "random":
+        if mode == "global-random":
             random_number = random.randint(0,side*side-1)
+        elif mode == 'random':
+            target = [grid_id]
+            if int((grid_id - 1) / side) == int(grid_id / side) and grid_id - 1 > 0:
+                target.append(grid_id - 1)
+            if int((grid_id + 1) / side) == int(grid_id / side) and grid_id + 1 < side * side:
+                target.append(grid_id + 1)
+            if grid_id + side < side * side:
+                target.append(grid_id + side)
+            if grid_id - side > 0:
+                target.append(grid_id - side)
+            random_number = choice(target)
         elif mode == 'nearby':
             target = []
             if int((grid_id - 1) / side) == int(grid_id / side) and grid_id - 1 > 0:
@@ -596,7 +617,12 @@ def cruising(eligible_driver_table, mode):
     return itinerary_node_list, itinerary_segment_dis_list, dis_array
 
 
-def order_dispatch(wait_requests, driver_table, maximal_pickup_distance=950, dispatch_method='LD'):
+def skewed_normal_distribution(u,thegma,k,omega,a,input_size):
+
+    return skewnorm.rvs(a,loc=u,scale=thegma,size=input_size)
+
+
+def order_dispatch(wait_requests, driver_table, maximal_pickup_distance=950, dispatch_method='LD',rl_mode='pickup_distance'):
     """
     :param wait_requests: the requests of orders
     :type wait_requests: pandas.DataFrame
@@ -623,12 +649,10 @@ def order_dispatch(wait_requests, driver_table, maximal_pickup_distance=950, dis
             request_array = np.repeat(request_array_temp.values, num_idle_driver, axis=0)
             driver_loc_array_temp = idle_driver_table.loc[:, ['lng', 'lat', 'driver_id']]
             driver_loc_array = np.tile(driver_loc_array_temp.values, (num_wait_request, 1))
-
-            # itinerary_node_list, itinerary_segment_dis_list, dis_array = route_generation_array(request_array[:, :2],
-            #                                                                                     driver_loc_array[:, :2],
-            #                                                                                   mode='drop_end')
             dis_array = distance_array(request_array[:, :2], driver_loc_array[:, :2])
-
+            if rl_mode == "pickup_distance":
+                # weight转换为最大pickup distance - 当前pickup distance
+                request_array[:,-1] = maximal_pickup_distance - dis_array + 1
             flag = np.where(dis_array <= maximal_pickup_distance)[0]
             if len(flag) > 0:
                 order_driver_pair = np.vstack(
@@ -646,9 +670,9 @@ def order_dispatch(wait_requests, driver_table, maximal_pickup_distance=950, dis
                 driver_loc_array_new = np.array(driver_loc_array_temp.loc[driver_indexs_new])[:,:2]
                 itinerary_node_list, itinerary_segment_dis_list, dis_array = route_generation_array(
                     driver_loc_array_new, request_array_new, mode=env_params['pickup_mode'])
-                itinerary_node_list_new = []
-                itinerary_segment_dis_list_new = []
-                dis_array_new = []
+                # itinerary_node_list_new = []
+                # itinerary_segment_dis_list_new = []
+                # dis_array_new = []
                 # for item in matched_pair_actual_indexs:
                 #     index = int(item[3])
                 #     itinerary_node_list_new.append(itinerary_node_list[index])
@@ -666,9 +690,15 @@ def driver_online_offline_decision(driver_table, current_time):
     # This function is aimed to switch the driver states between 0 and 3, based on the 'start_time' and 'end_time' of drivers
     # Notice that we should not change the state of delievery and pickup drivers, since they are occopied. 
     online_driver_table = driver_table.loc[(driver_table['start_time'] <= current_time) & (driver_table['end_time'] > current_time)]
-    offline_driver_table = driver_table[~driver_table.isin(online_driver_table)]
-    print(f'online count: {len(online_driver_table)}, offline count: {len(offline_driver_table)}, total count: {len(driver_table)}')
+    offline_driver_table = driver_table.loc[(driver_table['start_time'] > current_time) | (driver_table['end_time'] <= current_time)]
+    
+    online_driver_table = online_driver_table.loc[(online_driver_table['status'] != 1) | (online_driver_table['status'] != 2)]
+    offline_driver_table = offline_driver_table.loc[(offline_driver_table['status'] != 1) | (offline_driver_table['status'] != 2)]
+    # print(f'online count: {len(online_driver_table)}, offline count: {len(offline_driver_table)}, total count: {len(driver_table)}')
     new_driver_table = driver_table
+    new_driver_table.loc[new_driver_table.isin(online_driver_table.to_dict('list')).all(axis=1), 'status'] = 0
+    new_driver_table.loc[new_driver_table.isin(offline_driver_table.to_dict('list')).all(axis=1), 'status'] = 3
+    # return new_driver_table
     return new_driver_table
 
 
@@ -676,7 +706,7 @@ def driver_online_offline_decision(driver_table, current_time):
 
 
 
-def get_nodeId_from_coordinate(lat, lng):
+def get_nodeId_from_coordinate(lng, lat):
     """
 
     :param lat: latitude
@@ -688,7 +718,7 @@ def get_nodeId_from_coordinate(lat, lng):
     """
     node_list = []
     for i in range(len(lat)):
-        x = node_coord_to_id[(lat[i],lng[i])]
+        x = node_coord_to_id[(lng[i],lat[i])]
         node_list.append(x)
     return node_list
 
@@ -701,9 +731,9 @@ def KM_simulation(wait_requests, driver_table, method = 'nothing'):
     if num_wait_request > 0 and num_idle_driver > 0:
         starttime_1 = time.time()
 
-        request_array = wait_requests.loc[:, ['origin_lng', 'origin_lat', 'order_id', 'weight']].values
+        request_array = wait_requests.loc[:, ['origin_lat', 'origin_lng', 'order_id', 'weight']].values
         request_array = np.repeat(request_array, num_idle_driver, axis=0)
-        driver_loc_array = idle_driver_table.loc[:, ['lng', 'lat', 'driver_id']].values
+        driver_loc_array = idle_driver_table.loc[:, ['lat', 'lng', 'driver_id']].values
         driver_loc_array = np.tile(driver_loc_array, (num_wait_request, 1))
         assert driver_loc_array.shape[0] == request_array.shape[0]
         dis_array = distance_array(request_array[:, :2], driver_loc_array[:, :2])
@@ -768,8 +798,3 @@ class State:
 # rl for matching
 
 #############################################################################
-
-
-
-
-
