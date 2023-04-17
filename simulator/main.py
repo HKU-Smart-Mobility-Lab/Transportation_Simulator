@@ -11,13 +11,14 @@ import os
 from utilities import *
 from sarsa import SarsaAgent
 from matplotlib import pyplot as plt
+from A2C import * # you may comment this import if you are running matching
 # python D:\Feng\drl_subway_comp\main.py
 
 if __name__ == "__main__":
     driver_num = [100]
     max_distance_num = [1]
 
-    cruise_flag = [True]
+    cruise_flag = [True if env_params['rl_mode'] == 'matching' else False]
     pickup_flag = ['rg']
     delivery_flag = ['rg']
 
@@ -36,7 +37,7 @@ if __name__ == "__main__":
                         env_params['maximal_pickup_distance'] = single_max_distance_num
 
                         simulator = Simulator(**env_params)
-                        # Comment simulator.reset() below if you need
+                        # Comment simulator.reset() below if you are not running matching with instant_reward_no_subway
                         simulator.reset()
                         track_record = []
                         t = time.time()
@@ -271,8 +272,8 @@ if __name__ == "__main__":
                             file = open(file_path + '/time_statistic.txt', 'a')
                             file.write(str(time.time()-t)+'\n')
 
-                        elif env_params.rl_mode == "reposition":
-                            len_time_binary = 9
+                        elif env_params['rl_mode'] == "reposition":
+                            len_time_binary = 18
                             len_grid_binary = 7
                             if simulator.experiment_mode == 'train':
                                 epsilons = get_exponential_epsilons(INIT_EPSILON, FINAL_EPSILON, NUM_EPOCH, decay=DECAY,
@@ -303,6 +304,7 @@ if __name__ == "__main__":
                                                         model_name=simulator.reposition_method)
 
                                 repo_agent = A2C(**agent_params)
+                                ax,ay= [],[]
                                 for epoch in range(NUM_EPOCH):
                                     start_time = time.time()
                                     date = TRAIN_DATE_LIST[epoch % len(TRAIN_DATE_LIST)]
@@ -347,7 +349,6 @@ if __name__ == "__main__":
                                     next_time_array = simulator.next_state_time_array_done
                                     reward_array = simulator.reward_array_done
                                     done_array = np.zeros(grid_array.shape)
-
                                     # transform the states and next states
                                     index_grid = \
                                     np.where(grid_array.reshape(grid_array.size, 1) == simulator.zone_id_array)[1]
@@ -383,19 +384,28 @@ if __name__ == "__main__":
                                                                         index_next_time, :]
                                         next_state_array = np.hstack([next_state_array, global_next_idle_driver_array,
                                                                       global_next_wait_orders_array])
-
                                     transitions = [state_array, action_array, reward_array, next_state_array,
                                                    done_array]
-                                    repo_agent.perceive(transitions)
+                                    # if len(transitions[1]) == 0:
+                                    #     continue
+                                    perceive_flag = True
+                                    for i in range(5):
+                                        if transitions[i].shape[0] == 0:
+                                            perceive_flag = False 
+                                            break 
+                                    if perceive_flag:
+                                        repo_agent.perceive(transitions)
 
                                     end_time = time.time()
-
                                     total_reward_record[epoch] = simulator.total_reward
+
                                     print('epoch:', epoch)
                                     print('epoch running time: ', end_time - start_time)
                                     print('epoch epsilon: ', epsilons[epoch])
-                                    # print('epoch total reward: ', simulator.total_reward)
-                                    print('num_transitions: ', transitions[1].shape[0])
+                                    print('epoch total reward: ', simulator.total_reward)
+
+                                    ax.append(epoch)
+                                    ay.append(simulator.total_reward)
 
                                     if epoch % 100 == 0:  # save the result every 100 epochs
                                         repo_agent.save_model(epoch)
@@ -412,10 +422,21 @@ if __name__ == "__main__":
                                                                               'wb'))
                                         break
 
+                                plt.plot(ax,ay)
+                                plt.plot(ax,ay,'r+')
+                                plt.show()
 
                             elif simulator.experiment_mode == 'test':
                                 simulator = Simulator(**env_params)
-                                column_list = ['total_reward', 'matched_request_num', 'total_request_num',
+                                column_list = ['total_reward', 'matched_request_num',
+                                               'long_request_num',
+                                               'matched_long_request_num', 'matched_medium_request_num',
+                                               'medium_request_num',
+                                               'matched_short_request_num',
+                                               'short_request_num', 'total_request_num',
+                                               'waiting_time','pickup_time','occupancy_rate','occupancy_rate_no_pickup',
+                                               'matched_long_request_ratio', 'matched_medium_request_ratio',
+                                               'matched_short_request_ratio',
                                                'matched_request_ratio']
                                 test_num = 6
                                 test_interval = 3
@@ -428,7 +449,7 @@ if __name__ == "__main__":
 
                                 if simulator.reposition_method == 'A2C':
                                     agent_params = dict(action_dim=5, state_dim=(len_time_binary + len_grid_binary),
-                                                        available_directions=simulator.GS.df_available_directions,
+                                                        available_directions=df_available_directions,
                                                         load_model=True, discount_factor=DISCOUNT_FACTOR,
                                                         actor_lr=ACTOR_LR,
                                                         critic_lr=CRITIC_LR,
@@ -438,19 +459,20 @@ if __name__ == "__main__":
                                 elif simulator.reposition_method == 'A2C_global_aware':
                                     agent_params = dict(action_dim=5,
                                                         state_dim=(
-                                                                    len_time_binary + len_grid_binary + 2 * simulator.GS.num_grid),
-                                                        available_directions=simulator.GS.df_available_directions,
+                                                                    len_time_binary + len_grid_binary + 2 * side**2),
+                                                        available_directions=df_available_directions,
                                                         load_model=True, discount_factor=DISCOUNT_FACTOR,
                                                         actor_lr=ACTOR_LR,
                                                         critic_lr=CRITIC_LR,
                                                         actor_structure=ACTOR_STRUCTURE,
                                                         critic_structure=CRITIC_STRUCTURE,
                                                         model_name=simulator.reposition_method)
-                                elif simulator.reposition_method == 'random_cruise' or simulator.reposition_method == 'stay':
+                                elif simulator.reposition_method == 'random_cruise' or simulator.reposition_method == 'stay' \
+                                or simulator.reposition_method == "nearby":
                                     agent_params = dict(action_dim=5,
                                                         state_dim=(
-                                                                    len_time_binary + len_grid_binary + 2 * simulator.GS.num_grid),
-                                                        available_directions=simulator.GS.df_available_directions,
+                                                                    len_time_binary + len_grid_binary + 2 * side**2),
+                                                        available_directions=df_available_directions,
                                                         load_model=False, discount_factor=DISCOUNT_FACTOR,
                                                         actor_lr=ACTOR_LR,
                                                         critic_lr=CRITIC_LR,
@@ -460,13 +482,20 @@ if __name__ == "__main__":
                                 repo_agent = A2C(**agent_params)
 
                                 for num in range(last_stopping_index, test_num):
-                                    print('num: ', num)
                                     total_reward = 0
                                     total_request_num = 0
+                                    long_request_num = 0
+                                    medium_request_num = 0
+                                    short_request_num = 0
                                     matched_request_num = 0
-
+                                    matched_long_request_num = 0
+                                    matched_medium_request_num = 0
+                                    matched_short_request_num = 0
+                                    occupancy_rate = 0
+                                    occupancy_rate_no_pickup = 0
+                                    wait_time = 0
+                                    pickup_time = 0
                                     for date in TEST_DATE_LIST:
-                                        print(date)
                                         simulator.experiment_date = date
                                         simulator.reset()
                                         for step in range(simulator.finish_run_step):
@@ -497,13 +526,31 @@ if __name__ == "__main__":
                                                     if simulator.reposition_method == 'A2C' or simulator.reposition_method == 'A2C_global_aware':
                                                         action = repo_agent.egreedy_actions(state_array[i], -1,
                                                                                             index_grid[i])
-
-
                                                     elif simulator.reposition_method == 'random_cruise':
                                                         action = repo_agent.egreedy_actions(state_array[i], 2,
                                                                                             index_grid[i])
                                                     elif simulator.reposition_method == 'stay':
                                                         action = 0
+                                                    elif simulator.reposition_method == 'nearby':
+                                                        grid_id = index_grid[i]
+                                                        target = [grid_id]
+                                                        
+                                                        if grid_id - side > 0:
+                                                            target.append(grid_id - side)                                            
+                                                        elif int((grid_id + 1) / side) == int(grid_id / side) and grid_id + 1 < side * side:
+                                                            target.append(grid_id + 1)
+                                                        elif grid_id + side < side * side:
+                                                            target.append(grid_id + side)
+                                                        elif int((grid_id - 1) / side) == int(grid_id / side) and grid_id - 1 > 0:
+                                                            target.append(grid_id - 1)
+
+                                                        action = 0
+                                                        max_value = -1
+                                                        for idx,item in enumerate(target):
+                                                            if item in simulator.grid_value.keys() and simulator.grid_value[item] > max_value:
+                                                                max_value = simulator.grid_value[item]
+                                                                action = idx
+                                            
                                                     action_array[i] = action
 
                                             simulator.step2(action_array)
@@ -511,17 +558,43 @@ if __name__ == "__main__":
                                         total_reward += simulator.total_reward
                                         total_request_num += simulator.total_request_num
                                         matched_request_num += simulator.matched_requests_num
+                                        long_request_num += simulator.long_requests_num
+                                        medium_request_num += simulator.medium_requests_num
+                                        short_request_num += simulator.short_requests_num
+                                        matched_long_request_num += simulator.matched_long_requests_num
+                                        matched_medium_request_num += simulator.matched_medium_requests_num
+                                        matched_short_request_num += simulator.matched_short_requests_num
+                                        occupancy_rate += simulator.occupancy_rate
+                                        occupancy_rate_no_pickup = simulator.occupancy_rate_no_pickup
+                                        wait_time += simulator.waiting_time / simulator.matched_requests_num
+                                        pickup_time += simulator.pickup_time / simulator.matched_requests_num
 
                                     total_reward = total_reward / len(TEST_DATE_LIST)
                                     total_request_num = total_request_num / len(TEST_DATE_LIST)
                                     matched_request_num = matched_request_num / len(TEST_DATE_LIST)
+                                    long_request_num /= len(TEST_DATE_LIST)
+                                    medium_request_num /= len(TEST_DATE_LIST)
+                                    short_request_num /= len(TEST_DATE_LIST)
+                                    matched_long_request_num /= len(TEST_DATE_LIST)
+                                    matched_medium_request_num /= len(TEST_DATE_LIST)
+                                    matched_short_request_num /= len(TEST_DATE_LIST)
+                                    occupancy_rate /= len(TEST_DATE_LIST)
+                                    occupancy_rate_no_pickup /= len(TEST_DATE_LIST)
+                                    wait_time /= len(TEST_DATE_LIST)
+                                    pickup_time /= len(TEST_DATE_LIST)
 
-                                    record_array = np.array([total_reward, matched_request_num, total_request_num])
+                                    record_array = np.array(
+                                        [total_reward, matched_request_num,
+                                         long_request_num,matched_long_request_num, 
+                                         matched_medium_request_num,medium_request_num,
+                                         matched_short_request_num,short_request_num, total_request_num,
+                                         wait_time,pickup_time,occupancy_rate,occupancy_rate_no_pickup,
+                                               ])
 
                                     if num == 0:
-                                        df.iloc[0, :3] = record_array
+                                        df.iloc[0, :13] = record_array
                                     else:
-                                        df.iloc[num, :3] = (df.iloc[(num - 1), :3].values * num + record_array) / (
+                                        df.iloc[num, :13] = (df.iloc[(num - 1), :13].values * num + record_array) / (
                                                     num + 1)
 
                                     if num % 1 == 0:  # save the result every 10
@@ -537,10 +610,27 @@ if __name__ == "__main__":
                                             index = num
                                             print('converged at index ', index)
                                             break
+                                
+                                df.loc[:(num), 'matched_long_request_ratio'] = df.loc[:(num),
+                                                                               'matched_long_request_num'].values / df.loc[
+                                                                                                                    :(num),
+                                                                                                                    'long_request_num'].values
+                                df.loc[:(num), 'matched_medium_request_ratio'] = df.loc[:(num),
+                                                                                 'matched_medium_request_num'].values / df.loc[
+                                                                                                                        :(
+                                                                                                                            num),
+                                                                                                                        'medium_request_num'].values
+                                df.loc[:(num), 'matched_short_request_ratio'] = df.loc[:(num),
+                                                                                'matched_short_request_num'].values / df.loc[
+                                                                                                                      :(
+                                                                                                                          num),
+                                                                                                                      'short_request_num'].values
+                                df.loc[:(num), 'matched_request_ratio'] = df.loc[:(num),
+                                                                          'matched_request_num'].values / df.loc[:(num),
+                                                                                                          'total_request_num'].values
 
-                                df.loc[:num, 'matched_request_ratio'] = df.loc[:num,
-                                                                        'matched_request_num'].values / df.loc[:num,
-                                                                                                        'total_request_num'].values
+
+
                                 pickle.dump(df, open(load_path + 'performance_record_test_' + env_params[
                                     'reposition_method'] + '.pickle', 'wb'))
                                 print(df.iloc[num, :])

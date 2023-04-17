@@ -98,44 +98,87 @@ direction4_available_list = [] # right
 centroid_lng_list = []
 centroid_lat_list = []
 
-for i in range(side**2):
+if env_params['rl_mode'] == "matching":
+    for i in range(side**2):
 
-    centroid_lng_list.append(result[result['grid_id']==i]['lng'])
-    centroid_lat_list.append(result[result['grid_id']==i]['lat'])
-    # up
-    if math.floor(i / side) == 0:
-        direction_1_list.append(0)
-        direction1_available_list.append(np.nan)
-    else:
-        direction_1_list.append(1)
-        direction1_available_list.append(i-side)
-
-
-    # down
-    if math.floor(i / side) == side - 1:
-        direction_2_list.append(0)
-        direction2_available_list.append(np.nan)
-    else:
-        direction_2_list.append(1)
-        direction2_available_list.append(i + side)
+        centroid_lng_list.append(result[result['grid_id']==i]['lng'])
+        centroid_lat_list.append(result[result['grid_id']==i]['lat'])
+        # up
+        if math.floor(i / side) == 0:
+            direction_1_list.append(0)
+            direction1_available_list.append(np.nan)
+        else:
+            direction_1_list.append(1)
+            direction1_available_list.append(i-side)
 
 
+        # down
+        if math.floor(i / side) == side - 1:
+            direction_2_list.append(0)
+            direction2_available_list.append(np.nan)
+        else:
+            direction_2_list.append(1)
+            direction2_available_list.append(i + side)
 
-    # left
-    if i % side == 0:
-        direction_3_list.append(0)
-        direction3_available_list.append(np.nan)
-    else:
-        direction_3_list.append(1)
-        direction3_available_list.append(i-1)
 
-    # right
-    if i % side == side -1:
-        direction_4_list.append(0)
-        direction4_available_list.append(np.nan)
-    else:
-        direction_4_list.append(1)
-        direction4_available_list.append(i+1)
+
+        # left
+        if i % side == 0:
+            direction_3_list.append(0)
+            direction3_available_list.append(np.nan)
+        else:
+            direction_3_list.append(1)
+            direction3_available_list.append(i-1)
+
+        # right
+        if i % side == side -1:
+            direction_4_list.append(0)
+            direction4_available_list.append(np.nan)
+        else:
+            direction_4_list.append(1)
+            direction4_available_list.append(i+1)
+elif env_params['rl_mode'] == "reposition":
+    for i in range(side**2):
+        if len(result[result['grid_id']==i]['lng'].values.tolist()) == 0:
+            centroid_lng_list.append(lng_list[0])
+            centroid_lat_list.append(lat_list[0])
+        else:
+            centroid_lng_list.append(result[result['grid_id']==i]['lng'].values.tolist()[0])
+            centroid_lat_list.append(result[result['grid_id']==i]['lat'].values.tolist()[0])
+        # up
+        if math.floor(i / side) == 0 and len(result[result['grid_id']==i-side]['lng'].values.tolist()) == 0:
+            direction_1_list.append(0)
+            direction1_available_list.append(i)
+        else:
+            direction_1_list.append(1)
+            direction1_available_list.append(i-side)
+
+
+        # down
+        if math.floor(i / side) == side - 1 and len(result[result['grid_id']==i+side]['lng'].values.tolist()) == 0:
+            direction_2_list.append(0)
+            direction2_available_list.append(i)
+        else:
+            direction_2_list.append(1)
+            direction2_available_list.append(i + side)
+
+
+
+        # left
+        if i % side == 0 and len(result[result['grid_id']==i-1]['lng'].values.tolist()) == 0:
+            direction_3_list.append(0)
+            direction3_available_list.append(i)
+        else:
+            direction_3_list.append(1)
+            direction3_available_list.append(i-1)
+
+        # right
+        if i % side == side -1 and len(result[result['grid_id']==i+1]['lng'].values.tolist()) == 0:
+            direction_4_list.append(0)
+            direction4_available_list.append(i)
+        else:
+            direction_4_list.append(1)
+            direction4_available_list.append(i+1)
 
 df_available_directions['zone_id'] = [i for i in range(side**2)]
 df_available_directions['direction_0'] = 1
@@ -622,7 +665,7 @@ def skewed_normal_distribution(u,thegma,k,omega,a,input_size):
     return skewnorm.rvs(a,loc=u,scale=thegma,size=input_size)
 
 
-def order_dispatch(wait_requests, driver_table, maximal_pickup_distance=950, dispatch_method='LD',rl_mode='pickup_distance'):
+def order_dispatch(wait_requests, driver_table, maximal_pickup_distance=950, dispatch_method='LD',method='pickup_distance'):
     """
     :param wait_requests: the requests of orders
     :type wait_requests: pandas.DataFrame
@@ -650,7 +693,7 @@ def order_dispatch(wait_requests, driver_table, maximal_pickup_distance=950, dis
             driver_loc_array_temp = idle_driver_table.loc[:, ['lng', 'lat', 'driver_id']]
             driver_loc_array = np.tile(driver_loc_array_temp.values, (num_wait_request, 1))
             dis_array = distance_array(request_array[:, :2], driver_loc_array[:, :2])
-            if rl_mode == "pickup_distance":
+            if method == "pickup_distance":
                 # weight转换为最大pickup distance - 当前pickup distance
                 request_array[:,-1] = maximal_pickup_distance - dis_array + 1
             flag = np.where(dis_array <= maximal_pickup_distance)[0]
@@ -798,3 +841,8 @@ class State:
 # rl for matching
 
 #############################################################################
+
+
+
+
+

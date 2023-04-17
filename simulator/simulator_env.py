@@ -18,6 +18,7 @@ class Simulator:
         self.time = None
         self.current_step = None
         self.rl_mode = kwargs['rl_mode']
+        self.dayparting = kwargs['dayparting']
         self.zone_id_array = np.array([i for i in range(side**2)])
         self.requests  = None
         self.record =""
@@ -80,7 +81,7 @@ class Simulator:
         self.request_columns = ['order_id', 'origin_id', 'origin_lat', 'origin_lng', 'dest_id', 'dest_lat', 'dest_lng',
                                 'trip_distance', 'start_time', 'origin_grid_id','dest_grid_id', 'itinerary_node_list',
                                 'itinerary_segment_dis_list', 'trip_time', 'cancel_prob', 't_matched',
-                                'pickup_time', 'wait_time', 't_end', 'status', 'driver_id', 'maximum_wait_time', 
+                                'pickup_time', 'wait_time', 't_end', 'status', 'driver_id', 'maximum_wait_time', 'designed_reward',
                                 'pickup_distance']
                       
         self.wait_requests = None
@@ -129,7 +130,7 @@ class Simulator:
             self.action_array = np.array([])
             self.next_state_grid_array = np.array([])
             self.next_state_time_array = np.array([])
-            if self.reposition_method == 'A2C_global_aware':
+            if self.reposition_method == 'A2C_global_aware' or self.reposition_method == 'A2C':
                 self.global_time = []
                 self.global_drivers_num = []
                 self.global_orders_num = []
@@ -166,9 +167,8 @@ class Simulator:
         column_name = ['order_id', 'origin_id', 'origin_lat', 'origin_lng', 'dest_id', 'dest_lat', 'dest_lng',
                        'trip_distance', 'start_time', 'origin_grid_id', 'dest_grid_id', 'itinerary_node_list',
                        'itinerary_segment_dis_list', 'trip_time', 'designed_reward', 'cancel_prob']
-
+        self.end_of_episode = 0  # rl for matching
         if self.rl_mode == 'matching':
-            self.end_of_episode = 0  # rl for matching
             self.dispatch_transitions_buffer = [np.array([]).reshape([0, 2]), np.array([]), np.array([]).reshape([0, 2]),
                                             np.array([]).astype(float)]  # rl for matching
         self.requests = pd.DataFrame(request_list,columns=column_name)
@@ -229,10 +229,10 @@ class Simulator:
         :param matched_itinerary: including driver pick up route info
         :return: matched requests and wait requests
         """
-        if self.rl_mode == 'reposition':
+        if self.rl_mode == 'reposition' and len(self.wait_requests) > 0:
             # record number of idle drivers
             # rl for repositioning
-            con_idle_or_repo = (self.driver_table['status'] == 0) | (self.driver_table['status'] == 2)
+            con_idle_or_repo = (self.driver_table['status'] == 0) | (self.driver_table['status'] == 4)
             grid_id_idle_drivers = self.driver_table.loc[con_idle_or_repo, 'grid_id'].values
             indices = np.where(grid_id_idle_drivers.reshape(grid_id_idle_drivers.size, 1) == self.zone_id_array)[1]
             kd = np.bincount(indices)
@@ -242,11 +242,11 @@ class Simulator:
 
             # record total revenue of  wait_requests
             self.avg_revenue_by_grid = np.zeros(side**2)
-            group = self.wait_requests.loc[:, ['origin_grid_id', '_reward']].groupby('origin_grid_id')
+            group = self.wait_requests.loc[:, ['origin_grid_id', 'designed_reward']].groupby('origin_grid_id')
             gsum = group.sum()
             grid_id_array = np.array(gsum.index)
             indices = np.where(grid_id_array.reshape(grid_id_array.size, 1) == self.zone_id_array)[1]
-            self.avg_revenue_by_grid[indices] = gsum['immediate_reward'].values
+            self.avg_revenue_by_grid[indices] = gsum['designed_reward'].values
             self.avg_revenue_by_grid = self.avg_revenue_by_grid / idle_drivers_pre
             # print('avg_revenue_by_grid: ', self.avg_revenue_by_grid)
 
@@ -313,18 +313,23 @@ class Simulator:
             extra_time[extra_time < 0] = 0
             self.total_service_time -= np.sum(extra_time)
             self.occupancy_rate_no_pickup = self.total_service_time / self.total_online_time         
-            # print(matched_itinerary_df[con_remain]['trip_distance_distance'].values)
-            # new_matched_requests['designed_reward'] = 2.5 + 0.5 * int(max(0,matched_itinerary_df[con_remain]['trip_distance_distance'].values.all()-322)/322)
-            # print(new_matched_requests['designed_reward'])
-            # sys.exit()
+
 
             # driver not cancelled
-            # TODO: only exist in simulator version
-            for grid_start in new_matched_requests['dest_grid_id'].values:
-                if grid_start not in self.grid_value.keys():
-                    self.grid_value[grid_start] = 1
-                else:
-                    self.grid_value[grid_start] += 1
+            # The code below only exist in the first matching code and reposition code
+            if self.method == 'instant_reward_no_subway': # The code below only exist in 
+                if self.rl_mode == 'matching':
+                    for grid_start in new_matched_requests['dest_grid_id'].values:
+                        if grid_start not in self.grid_value.keys():
+                            self.grid_value[grid_start] = 1
+                        else:
+                            self.grid_value[grid_start] += 1
+                elif self.rl_mode == 'reposition':
+                    for grid_start in new_matched_requests['origin_grid_id'].values:
+                        if grid_start not in self.grid_value.keys():
+                            self.grid_value[grid_start] = 1
+                        else:
+                            self.grid_value[grid_start] += 1
             
             self.driver_table.loc[cor_driver[con_remain], 'status'] = 2
             self.driver_table.loc[cor_driver[con_remain], 'target_loc_lng'] = new_matched_requests['dest_lng'].values
@@ -397,6 +402,7 @@ class Simulator:
 
 
         update_wait_requests = pd.concat([update_wait_requests, self.wait_requests[~con_matched & con_keep_wait]],axis=0)
+        
         # statistics
         long_added = new_matched_requests[new_matched_requests['trip_time'] >= 600].shape[0]
         short_added = new_matched_requests[new_matched_requests['trip_time'] <= 300].shape[0]
@@ -406,11 +412,10 @@ class Simulator:
         self.matched_medium_requests_num += (new_matched_requests.shape[0] - long_added - short_added)
         self.waiting_time += np.sum(new_matched_requests['wait_time'].values)
         self.pickup_time += np.sum(new_matched_requests['pickup_time'].values)
+        # statistics for matching
         self.driver_status_all_time.append(self.driver_table)
         self.used_driver_status_all_time.append(self.driver_table[(self.driver_table['status'] ==1) | (self.driver_table['status'] ==2)])
         self.order_status_all_time.append(new_matched_requests)
-        # print("wait_time",self.waiting_time)
-        # print("pickup_time",self.pickup_time)
         return new_matched_requests, update_wait_requests
 
     def order_generation(self):
@@ -423,6 +428,7 @@ class Simulator:
             sampled_requests = []
             temp_request = []
             # TJ  当更换训练为日期时 取消以下的注释
+            # E.g. matching code runs on date_based data, reposition code on the contrary
             min_time = max(env_params['t_initial'], self.time - self.request_interval)
             for time in range(min_time, self.time):
                 if time in self.request_databases.keys():
@@ -445,6 +451,7 @@ class Simulator:
             column_name = ['order_id', 'origin_id', 'origin_lat', 'origin_lng', 'dest_id', 'dest_lat', 'dest_lng',
                            'trip_distance', 'start_time', 'origin_grid_id', 'dest_grid_id', 'itinerary_node_list',
                            'itinerary_segment_dis_list', 'trip_time', 'designed_reward', 'cancel_prob']
+            
             if len(sampled_requests) > 0:
                 itinerary_segment_dis_list = []
                 itinerary_node_list = np.array(sampled_requests)[:, 11]
@@ -472,7 +479,6 @@ class Simulator:
                 #     if len(itinerary_node_list[j]) == len(itinerary_segment_dis_list[j]):
                 #         continue
                 #     itinerary_node_list[j].pop()
-                # print("iti",itinerary_segment_dis_list)
                 wait_info = pd.DataFrame(sampled_requests, columns=column_name)
                 wait_info['itinerary_node_list'] = itinerary_node_list
                 wait_info['start_time'] = self.time
@@ -480,23 +486,28 @@ class Simulator:
                 wait_info['trip_time'] = wait_info['trip_distance'] / self.vehicle_speed * 3600
                 wait_info['wait_time'] = 0
                 # TJ
-                wait_info['designed_reward'] = 2.5 + 0.5 * int(max(0,trip_distance*1000-322)/322)
+                if self.rl_mode == 'matching':
+                    wait_info['designed_reward'] = 2.5 + 0.5 * int(max(0,trip_distance*1000-322)/322)
+                elif self.rl_mode == 'reposition':
+                    wait_info['designed_reward'] = 2.5 + 0.5 * int(max(0,trip_distance-322)/322)
+                    wait_info['immediate_reward'] = 0
                 # TJ
                 wait_info['status'] = 0
                 # wait_info['maximum_wait_time'] = np.random.normal(self.maximum_wait_time_mean,
                 #
                 #                                                    self.maximum_wait_time_std, len(wait_info))
-                if self.time >= 25200 and self.time <=32400:
-                    params = time_params_dict['morning']
-                elif self.time >= 61200 and self.time <= 68400:
-                    params = time_params_dict['evening']
-                elif self.time >= 0 and self.time <= 18000:
-                    params = time_params_dict['midnight_early']
+                if self.dayparting == True:
+                    if self.time >= 25200 and self.time <=32400:
+                        params = time_params_dict['morning']
+                    elif self.time >= 61200 and self.time <= 68400:
+                        params = time_params_dict['evening']
+                    elif self.time >= 0 and self.time <= 18000:
+                        params = time_params_dict['midnight_early']
+                    else:
+                        params = time_params_dict['other']
+                    wait_info['maximum_wait_time'].apply(skewed_normal_distribution(params[0],params[1],params[2],params[3],params[4]))
                 else:
-                    params = time_params_dict['other']
-                wait_info['maximum_wait_time'].apply(skewed_normal_distribution(params[0],params[1],params[2],params[3],params[4]))
-                print(wait_info['maximum_wait_time'])
-                print("**"*30)
+                    wait_info['maximum_wait_time'] = self.maximum_wait_time_mean
                 wait_info['itinerary_segment_dis_list'] = itinerary_segment_dis_list
                 wait_info['weight'] = wait_info['trip_distance'] * 5
                 # add extra info of orders
@@ -552,7 +563,6 @@ class Simulator:
             # weight_array = np.ones(len(self.request_database))  # rl for matching
             weight_array = np.ones(len(sampled_requests))  # rl for matching
             # FIXME: this is where things differ
-            # TODO: ask for better merge plans
             if self.rl_mode == 'matching':
                 original_trip_time = np.ones(len(sampled_requests)) # rl for matching
 
@@ -652,6 +662,8 @@ class Simulator:
                     reward_list.append((2.5 + 0.5 * int(max(0,dis*1000-322)/322)*(1 + env_params['price_increasing_percentage'])))
                 #reward_list *= (1 + env_params['price_increasing_percentage'])
                 wait_info['designed_reward'] = reward_list 
+                if self.rl_mode == 'reposition':
+                    weight_array = wait_info['designed_reward'].values
             # transfer_flag_array = np.zeros(len(self.request_database))
                 if self.rl_mode == 'matching':
 
@@ -686,45 +698,58 @@ class Simulator:
 
                 wait_info['wait_time'] = 0
                 wait_info['status'] = 0
-                wait_params = None
-                if self.time >= 25200 and self.time <=32400:
-                    wait_params = wait_time_params_dict['morning']                
-                    pick_params = pick_time_params_dict['morning']
-                    # price_increase_params = price_increase_params_dict['morning']
-                elif self.time >= 61200 and self.time <= 68400:
-                    wait_params = wait_time_params_dict['evening']
-                    pick_params = pick_time_params_dict['evening']
-                    # price_increase_params = price_increase_params_dict['evening']
-                elif self.time >= 0 and self.time <= 18000:
-                    wait_params = wait_time_params_dict['midnight_early']
-                    pick_params = pick_time_params_dict['midnight_early']
-                    # price_increase_params = price_increase_params_dict['midnight_early']
+                if self.dayparting == True:
+                    wait_params = None
+                    if self.time >= 25200 and self.time <=32400:
+                        wait_params = wait_time_params_dict['morning']                
+                        pick_params = pick_time_params_dict['morning']
+                        # price_increase_params = price_increase_params_dict['morning']
+                    elif self.time >= 61200 and self.time <= 68400:
+                        wait_params = wait_time_params_dict['evening']
+                        pick_params = pick_time_params_dict['evening']
+                        # price_increase_params = price_increase_params_dict['evening']
+                    elif self.time >= 0 and self.time <= 18000:
+                        wait_params = wait_time_params_dict['midnight_early']
+                        pick_params = pick_time_params_dict['midnight_early']
+                        # price_increase_params = price_increase_params_dict['midnight_early']
+                    else:
+                        wait_params = wait_time_params_dict['other']
+                        pick_params = pick_time_params_dict['other']
+                        # price_increase_params = price_increase_params_dict['other']
+
+                    wait_info['maximum_wait_time'] = skewed_normal_distribution(wait_params[0],wait_params[1],wait_params[2],wait_params[3],wait_params[4],len(wait_info)) * 60
+                    wait_info['maximum_pickup_time_passenger_can_tolerate'] = skewed_normal_distribution(pick_params[0],pick_params[1],pick_params[2],pick_params[3],pick_params[4],len(wait_info)) * 60
                 else:
-                    wait_params = wait_time_params_dict['other']
-                    pick_params = pick_time_params_dict['other']
-                    # price_increase_params = price_increase_params_dict['other']
-
-                wait_info['maximum_wait_time'] = skewed_normal_distribution(wait_params[0],wait_params[1],wait_params[2],wait_params[3],wait_params[4],len(wait_info)) * 60
-                wait_info['maximum_pickup_time_passenger_can_tolerate'] = skewed_normal_distribution(pick_params[0],pick_params[1],pick_params[2],pick_params[3],pick_params[4],len(wait_info)) * 60
-
+                    wait_info['maximum_wait_time'] = self.maximum_wait_time_mean
                 wait_info['weight'] = weight_array # rl for matching
                 # add extra info of orders
                 # 添加分布  价格高的删除
-                short_wait = len(wait_info[wait_info['trip_distance'] <= 2])
-                short_medium = len(wait_info[(wait_info['trip_distance'] > 2) & (wait_info['trip_distance'] <=5 )])
-                medium_long = len(wait_info[(wait_info['trip_distance'] > 5) & (wait_info['trip_distance'] <=20) ])
-                long_ = len(wait_info[wait_info['trip_distance'] > 20 ])
-                column_name_ = wait_info.columns.tolist()
-                column_name_.append('maximum_price_passenger_can_tolerate')
-                wait_info = wait_info.reindex(columns=column_name_,fill_value=0)
-               
-                wait_info.loc[(wait_info['trip_distance'] <= 2),['maximum_price_passenger_can_tolerate']] = skewed_normal_distribution(price_params_dict['short'][0],price_params_dict['short'][1],price_params_dict['short'][2],price_params_dict['short'][3],price_params_dict['short'][4],short_wait)
-                wait_info.loc[(wait_info['trip_distance'] > 2) & (wait_info['trip_distance'] <=5 ),['maximum_price_passenger_can_tolerate']] = skewed_normal_distribution(price_params_dict['short_medium'][0],price_params_dict['short_medium'][1],price_params_dict['short_medium'][2],price_params_dict['short_medium'][3],price_params_dict['short_medium'][4],short_medium)
-                wait_info.loc[(wait_info['trip_distance'] > 5) & (wait_info['trip_distance'] <=20),['maximum_price_passenger_can_tolerate']] = skewed_normal_distribution(price_params_dict['medium_long'][0],price_params_dict['medium_long'][1],price_params_dict['medium_long'][2],price_params_dict['medium_long'][3],price_params_dict['medium_long'][4],medium_long)
-                wait_info.loc[(wait_info['trip_distance'] > 20),['maximum_price_passenger_can_tolerate']] = skewed_normal_distribution(price_params_dict['long'][0],price_params_dict['long'][1],price_params_dict['long'][2],price_params_dict['long'][3],price_params_dict['long'][4],long_)
-                        
-                #wait_info['maximum_price_passenger_can_tolerate'] += skewed_normal_distribution(price_increase_params[0],price_increase_params[1],price_increase_params[2],price_increase_params[3],price_increase_params[4],len(wait_info))
-                               
+                if self.rl_mode == 'matching':
+                    short_wait = len(wait_info[wait_info['trip_distance'] <= 2])
+                    short_medium = len(wait_info[(wait_info['trip_distance'] > 2) & (wait_info['trip_distance'] <=5 )])
+                    medium_long = len(wait_info[(wait_info['trip_distance'] > 5) & (wait_info['trip_distance'] <=20) ])
+                    long_ = len(wait_info[wait_info['trip_distance'] > 20 ])
+                    column_name_ = wait_info.columns.tolist()
+                    column_name_.append('maximum_price_passenger_can_tolerate')
+                    wait_info = wait_info.reindex(columns=column_name_,fill_value=0)
+                
+                    wait_info.loc[(wait_info['trip_distance'] <= 2),['maximum_price_passenger_can_tolerate']] = skewed_normal_distribution(price_params_dict['short'][0],price_params_dict['short'][1],price_params_dict['short'][2],price_params_dict['short'][3],price_params_dict['short'][4],short_wait)
+                    wait_info.loc[(wait_info['trip_distance'] > 2) & (wait_info['trip_distance'] <=5 ),['maximum_price_passenger_can_tolerate']] = skewed_normal_distribution(price_params_dict['short_medium'][0],price_params_dict['short_medium'][1],price_params_dict['short_medium'][2],price_params_dict['short_medium'][3],price_params_dict['short_medium'][4],short_medium)
+                    wait_info.loc[(wait_info['trip_distance'] > 5) & (wait_info['trip_distance'] <=20),['maximum_price_passenger_can_tolerate']] = skewed_normal_distribution(price_params_dict['medium_long'][0],price_params_dict['medium_long'][1],price_params_dict['medium_long'][2],price_params_dict['medium_long'][3],price_params_dict['medium_long'][4],medium_long)
+                    wait_info.loc[(wait_info['trip_distance'] > 20),['maximum_price_passenger_can_tolerate']] = skewed_normal_distribution(price_params_dict['long'][0],price_params_dict['long'][1],price_params_dict['long'][2],price_params_dict['long'][3],price_params_dict['long'][4],long_)
+                    #wait_info['maximum_price_passenger_can_tolerate'] += skewed_normal_distribution(price_increase_params[0],price_increase_params[1],price_increase_params[2],price_increase_params[3],price_increase_params[4],len(wait_info))
+                elif self.rl_mode == 'reposition':
+                    wait_info['maximum_price_passenger_can_tolerate'] = np.random.normal(
+                        env_params['maximum_price_passenger_can_tolerate_mean'],
+                        env_params['maximum_price_passenger_can_tolerate_std'],
+                    len(wait_info))
+                    wait_info = wait_info[
+                        wait_info['maximum_price_passenger_can_tolerate'] >= wait_info['trip_distance'] * env_params[
+                            'price_per_km']]
+                    wait_info['maximum_pickup_time_passenger_can_tolerate'] = np.random.normal(
+                        env_params['maximum_pickup_time_passenger_can_tolerate_mean'],
+                        env_params['maximum_pickup_time_passenger_can_tolerate_std'],
+                        len(wait_info))
                 self.wait_requests = pd.concat([self.wait_requests, wait_info], ignore_index=True)
             
                 # statistics
@@ -747,7 +772,7 @@ class Simulator:
 
         # reposition decision
         # total_idle_time 为reposition间的间隔， time to last both-rg-cruising 为cruising间的间隔。
-        if self.reposition_flag:
+        if self.reposition_flag and self.rl_mode == 'matching':
             con_eligibe = (self.driver_table['total_idle_time'] > self.eligible_time_for_reposition) & \
                           (self.driver_table['status'] == 0)
             eligible_driver_table = self.driver_table[con_eligibe]
@@ -770,8 +795,12 @@ class Simulator:
                 self.driver_table.loc[eligible_driver_index, 'target_loc_lat'] = lat_array
                 self.driver_table.loc[eligible_driver_index, 'target_grid_id'] = grid_id_array
         if self.cruise_flag:
-            con_eligibe = (self.driver_table['time_to_last_cruising'] >= self.max_idle_time) & \
-                          (self.driver_table['status'] == 0)
+            if self.rl_mode == 'matching':
+                con_eligibe = (self.driver_table['time_to_last_cruising'] >= self.max_idle_time) & \
+                            (self.driver_table['status'] == 0)
+            elif self.rl_mode == 'reposition':
+                con_eligibe = (self.driver_table['total_idle_time'] > self.eligible_time_for_reposition) & \
+                           (self.driver_table['status'] == 0)
             eligible_driver_table = self.driver_table[con_eligibe]
             eligible_driver_index = list(eligible_driver_table.index)
             if len(eligible_driver_index) > 0:
@@ -800,7 +829,11 @@ class Simulator:
                 state_array = np.vstack(
                     [self.time + self.delta_t - self.max_idle_time + np.zeros(grid_id_array.shape[0]),
                      grid_id_array]).T
-                remaining_time_array = self.driver_table.loc[eligible_driver_index, 'remaining_time'].values
+                if self.rl_mode == 'matching':
+                    remaining_time_array = self.driver_table.loc[eligible_driver_index, 'remaining_time'].values
+                elif self.rl_mode == 'reposition':
+                    remaining_time_array = self.driver_table.loc[eligible_driver_index, 'remaining_time'].map(
+                    lambda x: x[0]).values
                 # TJ
 
                 # rl for matching
@@ -865,7 +898,7 @@ class Simulator:
 
         idle_drivers_by_grid = 0
         waiting_orders_by_grid = 0
-        if self.reposition_method == 'A2C' | self.reposition_method == 'A2C_global_aware':
+        if self.reposition_method == 'A2C' or self.reposition_method == 'A2C_global_aware':
             # record average idle vehicles and waiting requests in each grid
             # grid_id_idle_drivers = self.driver_table.loc[
             #                con_idle | (self.driver_table['status'] == 2), 'grid_id'].values
@@ -977,8 +1010,12 @@ class Simulator:
         self.driver_table['current_road_node_index'] = self.driver_table['current_road_node_index'].values.astype(int)
 
         loc_cruise = self.driver_table['status'] == 0
+        if self.rl_mode == 'matching':
+            loc_actually_cruising = loc_cruise & (self.driver_table['remaining_time'] > 0)
+        elif self.rl_mode == 'reposition':
+            loc_reposition = self.driver_table['status'] == 4
+            loc_actually_cruising = (loc_cruise | loc_reposition) & (self.driver_table['remaining_time'] > 0)
         loc_parking = loc_cruise & (self.driver_table['remaining_time'] == 0)
-        loc_actually_cruising = loc_cruise & (self.driver_table['remaining_time'] > 0)
         self.driver_table['remaining_time'] = self.driver_table['remaining_time'].values - self.delta_t
         loc_finished = self.driver_table['remaining_time'] <= 0
         loc_unfinished = ~loc_finished
@@ -1001,7 +1038,10 @@ class Simulator:
 
         # for unfinished tasks
         self.driver_table.loc[loc_cruise, 'total_idle_time'] += self.delta_t
-        con_real_time_ongoing = loc_unfinished & (loc_cruise | loc_reposition | loc_delivery) | loc_pickup 
+        if self.rl_mode == 'matching':
+            con_real_time_ongoing = loc_unfinished & (loc_cruise | loc_reposition | loc_delivery) | loc_pickup 
+        elif self.rl_mode == 'reposition':
+            con_real_time_ongoing = loc_unfinished & (loc_cruise | loc_reposition) | loc_pickup
         self.driver_table.loc[~loc_road_node_transfer & con_real_time_ongoing, 'remaining_time_for_current_node'] -= self.delta_t
 
         road_node_transfer_list = list(self.driver_table[loc_road_node_transfer & con_real_time_ongoing].index)
@@ -1211,11 +1251,7 @@ class Simulator:
         # TJ
         if len(df_new_matched_requests) != 0:
             self.total_reward += np.sum(df_new_matched_requests['designed_reward'].values)
-            # print("mean reward",df_new_matched_requests['designed_reward'].mean())
-            # print("max reward",df_new_matched_requests['designed_reward'].max())
-            # print("min reward",df_new_matched_requests['designed_reward'].min())
-            # print("total reward",self.total_reward)
-            # print("*"*10)
+            # print("added reward in rl step, reward is {}".format(self.total_reward))
         else:
             self.total_reward += 0
         # TJ
@@ -1225,7 +1261,7 @@ class Simulator:
             self.wait_requests = df_update_wait_requests.reset_index(drop=True)
 
         # Step 3: bootstrap new orders
-        self.step_bootstrap_new_orders(score_agent, epsilon)
+            self.step_bootstrap_new_orders(score_agent, epsilon)
         time4 = time.time()
         self.step3 += (time4 - time3)
         
@@ -1272,6 +1308,10 @@ class Simulator:
         self.occupancy_rate = self.cumulative_on_trip_driver_num / (
                     (1 + self.current_step) * self.driver_table.shape[0])
         df_new_matched_requests, df_update_wait_requests = self.update_info_after_matching_multi_process(matched_pair_actual_indexes,matched_itinerary)
+        if self.rl_mode == 'reposition' and self.end_of_episode == 0:
+            self.matched_requests = pd.concat([self.matched_requests, df_new_matched_requests], axis=0)
+            self.matched_requests = self.matched_requests.reset_index(drop=True)
+            self.wait_requests = df_update_wait_requests.reset_index(drop=True)
         self.matched_requests_num += len(df_new_matched_requests)
         # TJ
         if len(df_new_matched_requests) != 0:
@@ -1291,7 +1331,8 @@ class Simulator:
         # Step 5: update repositioning driver status
         action_array = action_array.astype(int)  # rl for repositioning
         self.update_repositioning_driver_status(action_array)  # rl for repositioning
-        self.cruise_and_reposition() # TODO: ask for step2 behavior
+        if self.rl_mode == 'matching' and self.method == 'instant_reward_no_subway':
+            self.cruise_and_reposition()
         # Step 6: update next state and time
         self.update_state()
         self.update_time()
