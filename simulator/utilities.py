@@ -735,8 +735,8 @@ def driver_online_offline_decision(driver_table, current_time):
     online_driver_table = driver_table.loc[(driver_table['start_time'] <= current_time) & (driver_table['end_time'] > current_time)]
     offline_driver_table = driver_table.loc[(driver_table['start_time'] > current_time) | (driver_table['end_time'] <= current_time)]
     
-    online_driver_table = online_driver_table.loc[(online_driver_table['status'] != 1) | (online_driver_table['status'] != 2)]
-    offline_driver_table = offline_driver_table.loc[(offline_driver_table['status'] != 1) | (offline_driver_table['status'] != 2)]
+    online_driver_table = online_driver_table.loc[(online_driver_table['status'] != 1) & (online_driver_table['status'] != 2)]
+    offline_driver_table = offline_driver_table.loc[(offline_driver_table['status'] != 1) & (offline_driver_table['status'] != 2)]
     # print(f'online count: {len(online_driver_table)}, offline count: {len(offline_driver_table)}, total count: {len(driver_table)}')
     new_driver_table = driver_table
     new_driver_table.loc[new_driver_table.isin(online_driver_table.to_dict('list')).all(axis=1), 'status'] = 0
