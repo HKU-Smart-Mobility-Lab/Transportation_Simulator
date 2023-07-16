@@ -24,7 +24,7 @@ Establish an open-sourced network-based simulation platform for shared mobility 
 
 2. Download the dependencies and libraries.
 
-`conda env create -f environment.yaml`
+`conda env create -f environment.yml`
 
 ### Download Data
 Here, we provide you data for Manhattan that we used in our experiments. You can download it from Onedrive.https://connecthkuhk-my.sharepoint.com/:f:/g/personal/ctj21_connect_hku_hk/EmQj0_wys2ZCq2MQqNF3BvABr8K8ZQsaK7dsUPw9lCu9EQ?e=HXKx0j). And due to the data privacy, we can not provide you the data for Hong Kong and Chengdu.
