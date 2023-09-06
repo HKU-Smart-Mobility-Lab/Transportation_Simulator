@@ -29,6 +29,10 @@ Establish an open-sourced network-based simulation platform for shared mobility 
 ### Download Data
 Here, we provide you data for Manhattan that we used in our experiments. You can download it from Onedrive.https://connecthkuhk-my.sharepoint.com/:f:/g/personal/ctj21_connect_hku_hk/EmQj0_wys2ZCq2MQqNF3BvABr8K8ZQsaK7dsUPw9lCu9EQ?e=HXKx0j). And due to the data privacy, we can not provide you the data for Hong Kong and Chengdu.
 
+### Survey Data
+We conducted a survey in NYC, and one hundred people participated in this survey. The content and results of the questionnaire can be found in the Survey_E-hailing_Taxi_Service_Studies.xlsx file. Hope that this data can help you for your research. And if you use these data in your research, please cite our paper: 
+Feng S., Chen T., Zhang Y., Ke J.* & H. Yang, 2023. A multi-functional simulation platform for on-demand ride service operations. Preprint at ArXiv:2303.12336. https://doi.org/10.48550/arXiv.2303.12336.
+
 ### File Structure
 
 ```
