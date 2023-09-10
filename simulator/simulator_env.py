@@ -592,7 +592,7 @@ class Simulator:
                     elif self.time > 25200:
                         access_time = 360
                     for i, request in enumerate(sampled_requests):  # rl for matching
-                        origin = request[3:5]  # rl for matching
+                        origin = request[2:4]  # rl for matching
                         dest = request[5:7]  # rl for matching
                         travel_time = request[-3]  # rl for matching
                         # fare = request[7]  # rl for matching
