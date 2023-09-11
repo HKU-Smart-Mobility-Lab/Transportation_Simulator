@@ -20,7 +20,7 @@ Establish an open-sourced network-based simulation platform for shared mobility 
 
 1. Download the code.
 
-`git clone git@github.com:HKU-Smart-Mobility-Lab/Transpotation_Simulator.git`
+`git clone git@github.com:HKU-Smart-Mobility-Lab/Transportation_Simulator.git`
 
 2. Download the dependencies and libraries.
 
