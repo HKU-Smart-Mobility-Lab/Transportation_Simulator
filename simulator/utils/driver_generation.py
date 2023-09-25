@@ -14,7 +14,7 @@ import sys
 '''
 
 #Driver file
-df_driver_info = pd.DataFrame(columns = ['driver_id', 'start_time', 'end_time', 'lng', 'lat','node_id' 'grid_id', 'status',
+df_driver_info = pd.DataFrame(columns = ['driver_id', 'start_time', 'end_time', 'lng', 'lat','node_id','grid_id', 'status',
                                'target_loc_lng', 'target_loc_lat', 'target_node_id','target_grid_id', 'remaining_time',
                                'matched_order_id', 'total_idle_time', 'time_to_last_cruising', 'current_road_node_index',
                                'remaining_time_for_current_node', 'itinerary_node_list', 'itinerary_segment_dis_list'])
