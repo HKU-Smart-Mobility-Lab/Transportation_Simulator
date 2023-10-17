@@ -47,20 +47,20 @@ env_params = {
 'reposition_method': 'A2C_global_aware',  # A2C, A2C_global_aware, random_cruise, stay  # rl for repositioning
 'dayparting': True, # if true, simulator_env will compute information based on time periods in a day, e.g. 'morning', 'afternoon'
 }
-wait_time_params_dict = {'morning': [2.582, 2.491, 0.026, 1.808, 2.581],
-                    'evening': [4.862, 2.485, 0, 1.379, 13.456],
-                    'midnight_early': [0, 2.388, 2.972, 2.954, 3.14],
-                    'other': [0, 2.017, 2.978, 2.764, 2.973]}
+# wait_time_params_dict = {'morning': [2.582, 2.491, 0.026, 1.808, 2.581],
+#                     'evening': [4.862, 2.485, 0, 1.379, 13.456],
+#                     'midnight_early': [0, 2.388, 2.972, 2.954, 3.14],
+#                     'other': [0, 2.017, 2.978, 2.764, 2.973]}
 
-pick_time_params_dict = {'morning': [1.877, 2.018, 2.691, 1.865, 6.683],
-                    'evening': [2.673,2.049,2.497,1.736,9.208],
-                    'midnight_early': [3.589,2.319,2.185,1.664,9.6],
-                    'other': [0,1.886,4.099,3.185,3.636]}
+# pick_time_params_dict = {'morning': [1.877, 2.018, 2.691, 1.865, 6.683],
+#                     'evening': [2.673,2.049,2.497,1.736,9.208],
+#                     'midnight_early': [3.589,2.319,2.185,1.664,9.6],
+#                     'other': [0,1.886,4.099,3.185,3.636]}
 
-price_params_dict = {'short': [1.245,0.599,10.629,10.305,0.451],
-                    'short_medium': [0.451,0.219,19.585,58.407,0.18],
-                    'medium_long': [14.411,4.421,11.048,9.228,145],
-                    'long': [15.821,3.409,0,16.221,838.587]}
+# price_params_dict = {'short': [1.245,0.599,10.629,10.305,0.451],
+#                     'short_medium': [0.451,0.219,19.585,58.407,0.18],
+#                     'medium_long': [14.411,4.421,11.048,9.228,145],
+#                     'long': [15.821,3.409,0,16.221,838.587]}
 
 # price_increase_params_dict = {'morning': [0.001,1.181,3.583,4.787,0.001],
 #                     'evening': [0,1.21,2.914,5.023,0.013],
