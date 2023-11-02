@@ -433,8 +433,8 @@ class Simulator:
             for time in range(min_time, self.time):
                 if time in self.request_databases.keys():
                     temp_request.extend(self.request_databases[time])
-            if self.time in self.request_databases.keys():
-                temp_request = self.request_databases[self.time]
+            # if self.time in self.request_databases.keys():
+            #     temp_request = self.request_databases[self.time]
             # temp_request = self.request_databases
             # TJ
             if temp_request == []:
