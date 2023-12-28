@@ -550,7 +550,7 @@ def sample_all_drivers(driver_info, t_initial, t_end, driver_sample_ratio=1, dri
     new_driver_info = deepcopy(driver_info)
     sampled_driver_info = new_driver_info.sample(frac=driver_sample_ratio)
     sampled_driver_info['status'] = 3
-    loc_con = sampled_driver_info['start_time'] <= t_initial
+    loc_con = (sampled_driver_info['start_time'] >= t_initial) & (sampled_driver_info['start_time'] <= t_end)
     sampled_driver_info.loc[loc_con, 'status'] = 0
     sampled_driver_info['target_loc_lng'] = sampled_driver_info['lng']
     sampled_driver_info['target_loc_lat'] = sampled_driver_info['lat']
