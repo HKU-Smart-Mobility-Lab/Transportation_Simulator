@@ -18,13 +18,37 @@ Establish an open-sourced network-based simulation platform for shared mobility 
 
 ### Install
 
-1. Download the code.
+1. Download the code
 
-`git clone git@github.com:HKU-Smart-Mobility-Lab/Transportation_Simulator.git`
+  `git clone git@github.com:HKU-Smart-Mobility-Lab/Transportation_Simulator.git`
 
-2. Download the dependencies and libraries.
+2. Pull the docker image
 
-`conda env create -f environment.yml`
+  `docker pull jingyunliu663/simulator`
+
+- after running the code, you can use `docker images` to check whether the image is available
+- the docker image comes with the conda environment `new_simulator` and the mongoDB service running in background within the container
+
+3. Run the docker image & get a docker container
+```bash
+docker run -d -e CRYPTOGRAPHY_OPENSSL_NO_LEGACY=1 -v /path/to/the/Transportation_Simulator:/simulator/scripts --name simulator jingyunliu663/simulator
+```
+- Arguments:
+  - `-d`: detach, run in background
+  - `-v path/to/your/local/file/system:/path/to/your/target/directory/inside/container`: This will mount the local directory into the container. Any changes made to the files in this directory within the container will also be reflected on the local host system, and vice versa.
+  - `--name`: name the container as *simulator*
+  - the last argument is the image name (after all, container is a running instance of an image)
+
+- you can use `docker ps` to check the running containers
+
+4. Enter the interactive shell of the conatiner `simulator`
+```bash
+docker exec -it simultor /bin/bash
+```
+
+- After enter the interactive shell , you will be in the working directory `/simulator`, you can navigate yourself to  `/simulator/scripts` directory (the directory you choose to mount to) to run the main function
+- You have to activate the conda environment: `conda activate new_simulator` 
+
 
 ### Download Data
 Here, we provide you data for Manhattan that we used in our experiments. You can download it from Onedrive.(https://connecthkuhk-my.sharepoint.com/:f:/g/personal/ctj21_connect_hku_hk/EuHy9dMKNy1CkZf5K87GMlYBAI54ZPeGzjanbrpBTZO5CQ?e=95BBYF). And due to the data privacy, we can not provide you the data for Hong Kong and Chengdu.
