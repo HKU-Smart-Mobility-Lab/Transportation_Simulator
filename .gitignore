@@ -20,3 +20,4 @@ simulator_matching/matching_train_logs/
 simulator_pricing/modelstraining_results_record
 simulator_pricing/output.log
 simulator_pricing/wandb/
+simulator_pricing/models/

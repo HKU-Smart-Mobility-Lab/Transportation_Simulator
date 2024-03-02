@@ -1,4 +1,4 @@
-load_path = "models"
+load_path = "./models"
 data_path =  "/manhattan/data/"
 
 

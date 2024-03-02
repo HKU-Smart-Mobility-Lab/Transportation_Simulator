@@ -1,3 +1,4 @@
+from utilities.utilities import *
 from simulator_env import Simulator
 import pickle
 import numpy as np
@@ -9,7 +10,6 @@ import warnings
 warnings.filterwarnings("ignore")
 import os
 from utilities import *
-from sarsa import SarsaAgent
 from matplotlib import pyplot as plt
 from pricing_agent import PricingAgent
 import wandb
@@ -26,7 +26,7 @@ if __name__ == "__main__":
     wandb.login()
     pricing_refactor = wandb.init(project="simulator_pricing_refactor",
                                        config={"pricing_method": "dynamic",
-                                               "driver_num": 200,
+                                               "driver_num": 100,
                                                "EPOCH":601},)      
 
     # track的格式为[{'driver_1' : [[lng, lat, status, time_a], [lng, lat, status, time_b]],
@@ -43,7 +43,6 @@ if __name__ == "__main__":
                         env_params['driver_num'] = single_driver_num
                         env_params['maximal_pickup_distance'] = single_max_distance_num
 
-                        pricing_agent = PricingAgent(**pricing_params)
                         simulator = Simulator(**env_params)
                         simulator.reset()
                         track_record = []
@@ -75,14 +74,12 @@ if __name__ == "__main__":
                                 for num in range(last_stopping_index, test_num):
                                     print('num: ', num)
                                     # simulator = Simulator(**env_params)
-                                    agent = {}
-                                    if simulator.method in ['sarsa', 'sarsa_no_subway', 'sarsa_travel_time',
-                                                            'sarsa_travel_time_no_subway',
-                                                            'sarsa_total_travel_time', 'sarsa_total_travel_time_no_subway']:
-                                        agent = SarsaAgent(**sarsa_params)
-                                        agent.load_parameters(
-                                            load_path + 'episode_4000\\sarsa_q_value_table_epoch_4000.pickle')
-
+                                    pricing_agent = {}
+                                    pricing_agent = PricingAgent(**pricing_params)
+                                    if env_params['pricing_strategy']=='dynamic':
+                                        pricing_agent.load_parameters(
+                                            load_path + '/episode_300/pricing_q_table_epoch_300.pickle')
+    
                                     total_reward = 0
                                     total_request_num = 0
                                     long_request_num = 0
@@ -101,9 +98,7 @@ if __name__ == "__main__":
                                         simulator.reset()
                                         start_time = time.time()
                                         for step in range(simulator.finish_run_step):
-                                            dispatch_transitions = simulator.rl_step(agent)
-                                            if step % 100 == 0:
-                                                print("At step {}".format(step)) # TODO: delete this test print
+                                            dispatch_transitions = simulator.rl_step(pricing_agent=pricing_agent)
                                         end_time = time.time()
 
                                         total_reward += simulator.total_reward
@@ -125,6 +120,7 @@ if __name__ == "__main__":
                                     total_reward = total_reward / len(TEST_DATE_LIST)
                                     ax.append(epoch)
                                     ay.append(total_reward)
+                                    print("------------test after epoch",epoch)
                                     print("total reward",total_reward)
                                     total_request_num = total_request_num / len(TEST_DATE_LIST)
                                     occupancy_rate = occupancy_rate / len(TEST_DATE_LIST)
@@ -156,7 +152,7 @@ if __name__ == "__main__":
                                         df.iloc[num, :13] = (df.iloc[(num - 1), :13].values * num + record_array) / (
                                                     num + 1)
 
-                                    if num % 10 == 0:  # save the result every 10
+                                    if num % 120 == 0:  # save the result every 10
                                         pickle.dump(df, open(
                                             load_path + 'performance_record_test_' + env_params['method'] + '.pickle',
                                             'wb'))
@@ -170,9 +166,6 @@ if __name__ == "__main__":
                                             index = num
                                             print('converged at index ', index)
                                             break
-                                plt.plot(ax,ay)
-                                plt.plot(ax,ay,'r+')
-                                plt.show()
 
                                 df.loc[:(num), 'matched_long_request_ratio'] = df.loc[:(num),
                                                                                'matched_long_request_num'].values / df.loc[
@@ -242,25 +235,6 @@ if __name__ == "__main__":
                                         "epoch_running_time": end_time - start_time,
                                     })
 
-                                    # if epoch % 200 == 0:  # save the result every 200 epochs
-                                    #     agent.save_parameters(epoch)
-
-                                    if epoch % 200 == 0:  # plot and save training curve
-                                        # plt.plot(list(range(epoch)), total_reward_record[:epoch])
-                                        pickle.dump(total_reward_record, open(load_path + 'training_results_record', 'wb'))
-
-                            for step in tqdm(range(simulator.finish_run_step)):
-                                new_tracks = simulator.rl_step()
-                                track_record.append(new_tracks)
-
-                            match_and_cancel_track_list = simulator.match_and_cancel_track
-                            file_path = './output3/' + pc_flag + "_" + dl_flag + "_" + "cruise="+str(cr_flag)
-                            if not os.path.exists(file_path):
-                                os.makedirs(file_path)
-                            pickle.dump(track_record, open(file_path + '/records_driver_num_'+str(single_driver_num)+'.pickle', 'wb'))
-                            pickle.dump(simulator.requests, open(file_path + '/passenger_records_driver_num_'+str(single_driver_num)+'.pickle', 'wb'))
-
-                            pickle.dump(match_and_cancel_track_list,open(file_path+'/match_and_cacel_'+str(single_driver_num)+'.pickle','wb'))
-                            file = open(file_path + '/time_statistic.txt', 'a')
-                            file.write(str(time.time()-t)+'\n')
+                                    if epoch % 50 == 0:  # save the result every 200 epochs
+                                        pricing_agent.save_parameters(epoch)
 

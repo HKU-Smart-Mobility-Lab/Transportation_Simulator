@@ -2,7 +2,7 @@ import pandas as pd
 
 from simulator_pattern import *
 from pricing_agent import PricingAgent
-from utilities import *
+from utilities.utilities import *
 np.warnings.filterwarnings('ignore', category=np.VisibleDeprecationWarning)
 import sys
 from config import pricing_params
@@ -237,7 +237,7 @@ class Simulator:
 
             cancel_prob_array = 0.05 + 0.005 * (designed_price_array - 2.5) + 0.05 * pickup_dis_array
             cancel_prob_array = np.clip(cancel_prob_array, 0, 0.9)
-            print(cancel_prob_array)
+            # print(cancel_prob_array)
             threshold = 0.9  # ✅ 越高，保留的订单越多
             con_passenger_remain = cancel_prob_array < threshold
     
@@ -815,14 +815,14 @@ class Simulator:
         This function used to run the simulator step by step
         :return: transitions buffer for pricing agent update
         """
-        print("-----------rl step----------------")
+        # print("-----------rl step----------------")
 
         pricing_transitions_buffer = [[], [], [], []]  # [state, action, next_state, reward]
     
         # Step 1: pricing agent gets action (reprice new orders)
         functional_pricing = False
         if len(self.wait_requests) > 0 and pricing_agent is not None:
-            print("pricing agent functions")
+            # print("pricing agent functions")
             functional_pricing = True
             # S
             pricing_state_current = self.get_pricing_state()
@@ -856,12 +856,12 @@ class Simulator:
         reward = np.sum(df_new_matched_requests['designed_reward'].values)
     
         # Step 4: update matched/wait requests
-        print("end of episode", self.end_of_episode)
+        # print("end of episode", self.end_of_episode)
         if self.end_of_episode == 0:
             self.matched_requests = pd.concat([self.matched_requests, df_new_matched_requests], axis=0).reset_index(drop=True)
             self.wait_requests = df_update_wait_requests.reset_index(drop=True)
             # Step 4.1: bootstrap new orders
-            print("bootstrap new orders")
+            # print("bootstrap new orders")
             self.step_bootstrap_new_orders()
 
     

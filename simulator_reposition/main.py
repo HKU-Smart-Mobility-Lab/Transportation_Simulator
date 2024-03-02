@@ -11,7 +11,7 @@ warnings.filterwarnings("ignore")
 import os
 from utilities import *
 from sarsa import SarsaAgent
-from A2C import *
+from Transportation_Simulator.simulator_reposition.reposition_strategy_base.A2C import *
 from matplotlib import pyplot as plt
 import logging
 import datetime

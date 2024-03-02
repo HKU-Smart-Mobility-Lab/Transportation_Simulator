@@ -3,7 +3,7 @@ from matching_strategy_base.Q_learning import QLearningAgent
 from matching_strategy_base.DQN import DQNAgent
 from utilities import *
 import numpy as np
-from dispatch_alg import LD
+from Transportation_Simulator.simulator_matching.matching_algorithm.dispatch_alg import LD
 
 class MatchingAgent:
     def __init__(self, strategy_type, strategy_params, load_path=None, flag_load=False):

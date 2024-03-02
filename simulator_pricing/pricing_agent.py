@@ -1,7 +1,7 @@
 import os
 import pickle
 from config import *
-from utilities import *
+from utilities.utilities import *
 
 class PricingAgent(object):
     def __init__(self, **params):
@@ -44,9 +44,9 @@ class PricingAgent(object):
         supply_bin = min((supply // 10) * 10, 90)
         demand_bin = min((demand // 10) * 10, 90)
 
-        # ✅ 可选：调试输出，观察 supply/demand 分布
-        if np.random.rand() < 0.01:  # 只打印少量，避免刷屏
-            print(f"[DEBUG] Discretizing state: time={time_slice}, supply={supply}, demand={demand} -> bin=({supply_bin}, {demand_bin})")
+        # # ✅ 可选：调试输出，观察 supply/demand 分布
+        # if np.random.rand() < 0.01:  # 只打印少量，避免刷屏
+        #     print(f"[DEBUG] Discretizing state: time={time_slice}, supply={supply}, demand={demand} -> bin=({supply_bin}, {demand_bin})")
 
         return (time_slice, supply_bin, demand_bin)
     
@@ -121,12 +121,21 @@ class PricingAgent(object):
 
 
     def save_parameters(self, epoch: int):
-        folder = os.path.join(os.path.abspath(os.path.dirname(__file__)), f'episode_{epoch}')
+        # 修改保存路径为当前路径下的 models 文件夹
+        base_folder = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'models')
+        folder = os.path.join(base_folder, f'episode_{epoch}')
+        
+        # 如果文件夹不存在，则创建
         if not os.path.exists(folder):
             os.makedirs(folder)
+        
+        # 保存文件路径
         file_path = os.path.join(folder, f'pricing_q_table_epoch_{epoch}.pickle')
+        
+        # 保存 Q 表到文件
         with open(file_path, 'wb') as f:
             pickle.dump(self.q_value_table, f, protocol=pickle.HIGHEST_PROTOCOL)
+
 
     def load_parameters(self, file_name):
         self.q_value_table = pickle.load(open(file_name, 'rb'))
