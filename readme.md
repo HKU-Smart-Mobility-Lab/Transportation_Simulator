@@ -207,7 +207,7 @@ The ownership of this repository is Prof. Hai Yang, Dr. Siyuan Feng from ITS Lab
 
 If you use this simulator for academic research, you are highly encouraged to cite our paper:
 
-Feng S., Chen T., Zhang Y., Ke J.* & H. Yang, 2023. A multi-functional simulation platform for on-demand ride service operations. Preprint at ArXiv:2303.12336. https://doi.org/10.48550/arXiv.2303.12336
+Feng S., Chen T., Zhang Y., Ke J.*, Zheng, Z., & H. Yang, 2024. A multi-functional simulation platform for on-demand ride service operations. *Communications in Transportation Research* (in press).
 
 
 
