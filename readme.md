@@ -203,11 +203,17 @@ This simulator is supported by the [Smart Mobility Lab](	https://github.com/HKU-
 
 The ownership of this repository is Prof. Hai Yang, Dr. Siyuan Feng from ITS Lab at The Hong Kong University of Science and Technology and Dr. Jintao Ke from SML at The Univerisity of Hong Kong.
 
-###  Citing
+###  Cite
 
-If you use this simulator for academic research, you are highly encouraged to cite our paper:
-
-Feng S., Chen T., Zhang Y., Ke J.*, Zheng, Z., & H. Yang, 2024. A multi-functional simulation platform for on-demand ride service operations. *Communications in Transportation Research* (in press).
+@article{feng2024multi,
+  title={A multi-functional simulation platform for on-demand ride service operations},
+  author={Feng, Siyuan and Chen, Taijie and Zhang, Yuhao and Ke, Jintao and Zheng, Zhengfei and Yang, Hai},
+  journal={Communications in Transportation Research},
+  volume={4},
+  pages={100141},
+  year={2024},
+  publisher={Elsevier}
+}
 
 
 
