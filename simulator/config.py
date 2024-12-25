@@ -26,8 +26,8 @@ env_params = {
 'track_recording_flag' : True,
 'driver_far_matching_cancel_prob_file' : 'driver_far_matching_cancel_prob',
 'input_file_path':'input/dataset.csv',
-'request_file_name' : 'input/order', #'toy_requests',
-'driver_file_name' : 'input/driver_info',
+'request_file_name' : 'input/order-11-13-frac=0.1', #'toy_requests',
+'driver_file_name' : 'input/driver_distribution_3am-4am',
 'road_network_file_name' : 'road_network_information.pickle',
 'dispatch_method': 'LD', #LD: lagarange decomposition method designed by Peibo Duan
 # 'method': 'instant_reward_no_subway',
@@ -42,7 +42,7 @@ env_params = {
 'south_lat': 40.6968,
 'east_lng': -74.0831,
 'west_lng': -73.8414,
-'rl_mode': 'reposition',  # reposition and matching
+'rl_mode': 'matching',  # reposition and matching
 'method': 'sarsa_no_subway',  #  'sarsa_no_subway' / 'pickup_distance' / 'instant_reward_no_subway'   #  rl for matching
 'reposition_method': 'A2C_global_aware',  # A2C, A2C_global_aware, random_cruise, stay  # rl for repositioning
 'dayparting': True, # if true, simulator_env will compute information based on time periods in a day, e.g. 'morning', 'afternoon'
@@ -78,7 +78,7 @@ sarsa_params = dict(learning_rate=0.005, discount_rate=0.95)  # parameters in sa
 
 # rl for repositioning
 # hyperparameters for rl
-NUM_EPOCH = 1301
+NUM_EPOCH = 3000
 STOP_EPOCH = 1300
 DISCOUNT_FACTOR = 0.95
 ACTOR_LR = 0.001
