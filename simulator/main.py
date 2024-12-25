@@ -14,6 +14,7 @@ from matplotlib import pyplot as plt
 from A2C import * # you may comment this import if you are running matching 
 # python D:\Feng\drl_subway_comp\main.py    
 
+
 if __name__ == "__main__":
     driver_num = [100]
     max_distance_num = [1]
@@ -249,7 +250,7 @@ if __name__ == "__main__":
                                     print("step5:update state",simulator.step5)                                 
                                     print("step6:offline update",simulator.step6)
                                     print("step7: update time",simulator.step7)
-                                    pickle.dump(simulator.record,open("output3/order_record-1103.pickle","wb"))
+                                    pickle.dump(simulator.record,open("output/order_record-1103.pickle","wb"))
                                     # if epoch % 200 == 0:  # save the result every 200 epochs
                                     #     agent.save_parameters(epoch)
 
