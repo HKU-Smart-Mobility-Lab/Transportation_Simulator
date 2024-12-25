@@ -1604,10 +1604,10 @@ class Simulator:
             temp_request = []
             # TJ 当更换为按照日期训练时 进行调整
             min_time = max(env_params['t_initial'], self.time - self.request_interval)
-            for time in range(min_time, self.time):
-                if time in self.request_databases.keys():
-                    temp_request.extend(self.request_databases[time])
-            # temp_request = self.request_databases
+            # for time in range(min_time, self.time):
+            #     if time in self.request_databases.keys():
+            #         temp_request.extend(self.request_databases[time])
+            temp_request = self.request_databases
         # TJ
             # if self.time in self.request_databases.keys():
             #     temp_request = self.request_databases[self.time]
