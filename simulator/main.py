@@ -11,8 +11,8 @@ import os
 from utilities import *
 from sarsa import SarsaAgent
 from matplotlib import pyplot as plt
-from A2C import * # you may comment this import if you are running matching
-# python D:\Feng\drl_subway_comp\main.py
+from A2C import * # you may comment this import if you are running matching 
+# python D:\Feng\drl_subway_comp\main.py    
 
 if __name__ == "__main__":
     driver_num = [100]
@@ -20,14 +20,14 @@ if __name__ == "__main__":
 
     cruise_flag = [True if env_params['rl_mode'] == 'matching' else False]
     pickup_flag = ['rg']
-    delivery_flag = ['rg']
+    delivery_flag = ['rg']  
 
     # track的格式为[{'driver_1' : [[lng, lat, status, time_a], [lng, lat, status, time_b]],
     # 'driver_2' : [[lng, lat, status, time_a], [lng, lat, status, time_b]]},
     # {'driver_1' : [[lng, lat, status, time_a], [lng, lat, status, time_b]]}]
     for pc_flag in pickup_flag:
         for dl_flag in delivery_flag:
-            for cr_flag in cruise_flag:
+            for cr_flag in cruise_flag:  
                 for single_driver_num in driver_num:
                     for single_max_distance_num in max_distance_num:
                         env_params['pickup_mode'] = pc_flag

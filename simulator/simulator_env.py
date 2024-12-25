@@ -49,6 +49,7 @@ class Simulator:
         self.driver_file_name = kwargs['driver_file_name']
         pattern_params = {'simulator_mode': self.simulator_mode, 'request_file_name': self.request_file_name,
                           'driver_file_name': self.driver_file_name}
+        # Patern Initiaoization
         pattern = SimulatorPattern(**pattern_params)
 
         # self.method = kwargs.pop('method', 'no_subway')  # rl for matching
@@ -96,7 +97,7 @@ class Simulator:
         self.driver_sample_ratio = kwargs['driver_sample_ratio']
 
         # order and driver databases
-        self.driver_info = pattern.driver_info
+        self.driver_info = pattern.driver_info # initial driver info
         self.driver_info['grid_id'] = self.driver_info['grid_id'].values.astype(int)
         self.request_all = pattern.request_all
         self.request_databases = None

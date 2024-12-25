@@ -530,7 +530,6 @@ def get_exponential_epsilons(initial_epsilon, final_epsilon, steps, decay=0.99, 
 
     return np.array(epsilons)
 
-
 def sample_all_drivers(driver_info, t_initial, t_end, driver_sample_ratio=1, driver_number_dist=''):
     """
     :param driver_info: the information of driver
@@ -564,7 +563,46 @@ def sample_all_drivers(driver_info, t_initial, t_end, driver_sample_ratio=1, dri
     sampled_driver_info['itinerary_node_list'] = [[] for i in range(sampled_driver_info.shape[0])]
     sampled_driver_info['itinerary_segment_time_list'] = [[] for i in range(sampled_driver_info.shape[0])]
 
+    # 添加 vehicle_type 和 energy_type 字段
+    sampled_driver_info['vehicle_type'] = sampled_driver_info['av'].apply(lambda x: 'AV' if x == 1 else 'HV')
+    sampled_driver_info['energy_type'] = sampled_driver_info['ev'].apply(lambda x: 'EV' if x == 1 else 'Non-EV')
+
     return sampled_driver_info
+
+# def sample_all_drivers(driver_info, t_initial, t_end, driver_sample_ratio=1, driver_number_dist=''):
+#     """
+#     :param driver_info: the information of driver
+#     :type driver_info:  pandas.DataFrame
+#     :param t_initial:   time of initial state
+#     :type t_initial:    int
+#     :param t_end:       time of terminal state
+#     :type t_end:        int
+#     :param driver_sample_ratio:
+#     :type driver_sample_ratio:
+#     :param driver_number_dist:
+#     :type driver_number_dist:
+#     :return:
+#     :rtype:
+#     """
+#     # 当前并无随机抽样司机；后期若需要，可设置抽样模块生成sampled_driver_info
+#     new_driver_info = deepcopy(driver_info)
+#     sampled_driver_info = new_driver_info.sample(frac=driver_sample_ratio)
+#     sampled_driver_info['status'] = 3
+#     loc_con = (sampled_driver_info['start_time'] >= t_initial) & (sampled_driver_info['start_time'] <= t_end)
+#     sampled_driver_info.loc[loc_con, 'status'] = 0
+#     sampled_driver_info['target_loc_lng'] = sampled_driver_info['lng']
+#     sampled_driver_info['target_loc_lat'] = sampled_driver_info['lat']
+#     sampled_driver_info['target_grid_id'] = sampled_driver_info['grid_id']
+#     sampled_driver_info['remaining_time'] = 0
+#     sampled_driver_info['matched_order_id'] = 'None'
+#     sampled_driver_info['total_idle_time'] = 0
+#     sampled_driver_info['time_to_last_cruising'] = 0
+#     sampled_driver_info['current_road_node_index'] = 0
+#     sampled_driver_info['remaining_time_for_current_node'] = 0
+#     sampled_driver_info['itinerary_node_list'] = [[] for i in range(sampled_driver_info.shape[0])]
+#     sampled_driver_info['itinerary_segment_time_list'] = [[] for i in range(sampled_driver_info.shape[0])]
+
+#     return sampled_driver_info
 
 
 def sample_request_num(t_mean, std, delta_t):
