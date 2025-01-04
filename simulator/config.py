@@ -46,6 +46,7 @@ env_params = {
 'method': 'sarsa_no_subway',  #  'sarsa_no_subway' / 'pickup_distance' / 'instant_reward_no_subway'   #  rl for matching
 'reposition_method': 'A2C_global_aware',  # A2C, A2C_global_aware, random_cruise, stay  # rl for repositioning
 'dayparting': True, # if true, simulator_env will compute information based on time periods in a day, e.g. 'morning', 'afternoon'
+'pricing_strategy':'static',
 }
 # wait_time_params_dict = {'morning': [2.582, 2.491, 0.026, 1.808, 2.581],
 #                     'evening': [4.862, 2.485, 0, 1.379, 13.456],
@@ -104,3 +105,4 @@ TRAIN_DATE_LIST = [i for i in range(36000,36100)]
 
 TEST_DATE_LIST = ['2015-07-27', '2015-07-28', '2015-07-29', '2015-07-30', '2015-07-31']
 #  rl for matching
+

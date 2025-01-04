@@ -2,7 +2,7 @@
 from simulator import simulator
 from pricing_agent import price_agent       # uppeer level pricing agent is a directory
 from matching_agent import matching_agent   # upper level matching agent is a directory
-from repostion_agent import reposition_agent # upper level reposition agent is a directory
+from reposition_agent import reposition_agent # upper level reposition agent is a directory
 
 class Simulator:
     def __init__(self):
