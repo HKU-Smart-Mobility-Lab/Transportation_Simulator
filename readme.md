@@ -16,6 +16,17 @@ Establish an open-sourced network-based simulation platform for shared mobility 
 
 • Based on a vehicle utilization based validation task, some RL based experiments, and one task for theoretical model evaluation, the simulator is validated to be effective and efficient for ride-sourcing related researches. In the future, the simulator can be easily modified for completing other tasks, such as dynamic pricing, ride-pooling service operations, control of shared autonomous vehicles, etc.
 
+###  Cite
+@article{feng2024multi,
+  title={A multi-functional simulation platform for on-demand ride service operations},
+  author={Feng, Siyuan and Chen, Taijie and Zhang, Yuhao and Ke, Jintao and Zheng, Zhengfei and Yang, Hai},
+  journal={Communications in Transportation Research},
+  volume={4},
+  pages={100141},
+  year={2024},
+  publisher={Elsevier}
+}
+
 ### Install
 
 1. Download the code
@@ -202,18 +213,6 @@ This simulator is supported by the [Smart Mobility Lab](	https://github.com/HKU-
 ### Ownership
 
 The ownership of this repository is Prof. Hai Yang, Dr. Siyuan Feng from ITS Lab at The Hong Kong University of Science and Technology and Dr. Jintao Ke from SML at The Univerisity of Hong Kong.
-
-###  Cite
-
-@article{feng2024multi,
-  title={A multi-functional simulation platform for on-demand ride service operations},
-  author={Feng, Siyuan and Chen, Taijie and Zhang, Yuhao and Ke, Jintao and Zheng, Zhengfei and Yang, Hai},
-  journal={Communications in Transportation Research},
-  volume={4},
-  pages={100141},
-  year={2024},
-  publisher={Elsevier}
-}
 
 
 
