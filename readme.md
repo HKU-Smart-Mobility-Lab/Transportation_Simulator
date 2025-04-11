@@ -12,7 +12,7 @@ Establish an open-sourced network-based simulation platform for shared mobility 
 
 • We develop a comprehensive, multi-functional and open-sourced simulator for ride-sourcing service, which can be used by both researchers and industrial practitioners on a variety of operational tasks. The proposed simulation platform overcomes a few challenges faced by previous simulators, including the closeness to reality, representation of customers’ and drivers’ heterogeneous behaviors, generalization for different tasks. 
 
-• The simulator provide interfaces for the training and testing of different tasks, such as testing of optimization algorithms, training/testing of reinforcement learning based approaches for matching and repositioning, evaluations of economic models for equilibrium analysis and operational strategy designs. 
+• The simulator provide interfaces for the training and testing of different tasks, such as testing of optimization algorithms, training/testing of reinforcement learning based approaches for matching, repositioning and pricing, evaluations of economic models for equilibrium analysis and operational strategy designs. 
 
 • Based on a vehicle utilization based validation task, some RL based experiments, and one task for theoretical model evaluation, the simulator is validated to be effective and efficient for ride-sourcing related researches. In the future, the simulator can be easily modified for completing other tasks, such as dynamic pricing, ride-pooling service operations, control of shared autonomous vehicles, etc.
 
