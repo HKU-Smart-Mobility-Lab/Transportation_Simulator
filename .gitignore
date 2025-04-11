@@ -1,2 +1,17 @@
 .DS_Store
 simulator/training_results_record
+output3/
+simulator_matching/episode_0/
+simulator_matching/episode_200/
+simulator_matching/episode_400/
+simulator_matching/episode_600/
+simulator_matching/matching_strategy_base/episode_0/
+simulator_matching/matching_strategy_base/episode_200/
+simulator_matching/matching_strategy_base/episode_400/
+simulator_matching/models/
+simulator_matching/output3/
+simulator_matching/wandb/
+simulator_reposition/log/
+simulator_reposition/models/
+simulator_reposition/saved_models/
+simulator_reposition/wandb/

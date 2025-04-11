@@ -17,10 +17,13 @@ class PricingAgent:
         dem = pricing_state["demand"]
         return (int(d * 10), s // 10, dem // 10)  # 简单离散化
 
+    # pricing agent的行为:对订单返回一个价格pd.series
     def get_action(self, pricing_state, epsilon=0.1):
+        trip_distances = pricing_state["trip_distances"]  # 应该是 Series 类型
+
         if self.strategy == "static":
-            trip_distances = pricing_state["trip_distances"]
-            return [2.5 + 0.5 * int(max(0, d * 1000 - 322) / 322) for d in trip_distances]
+            # 与旧代码一致：统一向量操作
+            return 2.5 + 0.5 * ((1000 * trip_distances - 322).clip(lower=0) / 322)
 
         elif self.strategy == "dynamic":
             state_key = self._discretize_state(pricing_state)
@@ -28,13 +31,17 @@ class PricingAgent:
                 self.q_table[state_key] = [0.0] * len(self.price_options)
 
             if np.random.rand() < epsilon:
-                return [np.random.choice(self.price_options) for _ in pricing_state["trip_distances"]]
+                price_per_km = np.random.choice(self.price_options)
             else:
-                best_price = self.price_options[np.argmax(self.q_table[state_key])]
-                return [best_price] * len(pricing_state["trip_distances"])
+                best_idx = np.argmax(self.q_table[state_key])
+                price_per_km = self.price_options[best_idx]
+
+            # 动态定价按距离乘以价格
+            return price_per_km * trip_distances  # 向量运算
 
         else:
             raise ValueError("Unsupported pricing strategy")
+
 
     def update(self, pricing_state, action_prices, reward):
         if self.strategy != "dynamic":
