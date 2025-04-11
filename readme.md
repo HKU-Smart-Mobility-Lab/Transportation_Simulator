@@ -12,7 +12,7 @@ Establish an open-sourced network-based simulation platform for shared mobility 
 
 • We develop a comprehensive, multi-functional and open-sourced simulator for ride-sourcing service, which can be used by both researchers and industrial practitioners on a variety of operational tasks. The proposed simulation platform overcomes a few challenges faced by previous simulators, including the closeness to reality, representation of customers’ and drivers’ heterogeneous behaviors, generalization for different tasks. 
 
-• The simulator provide interfaces for the training and testing of different tasks, such as testing of optimization algorithms, training/testing of reinforcement learning based approaches for matching, repositioning and pricing, evaluations of economic models for equilibrium analysis and operational strategy designs. 
+• The simulator provide interfaces for the training and testing of different tasks, such as testing of optimization algorithms, training/testing of reinforcement learning based approaches for matching, repositioning and pricing, evaluations of economic models for equilibrium analysis and operational strategy designs. Each module is organized as an independent package, making the system easier to maintain, extend, and experiment with reinforcement learning (RL) or rule-based strategies.
 
 • Based on a vehicle utilization based validation task, some RL based experiments, and one task for theoretical model evaluation, the simulator is validated to be effective and efficient for ride-sourcing related researches. In the future, the simulator can be easily modified for completing other tasks, such as dynamic pricing, ride-pooling service operations, control of shared autonomous vehicles, etc.
 
@@ -60,28 +60,33 @@ Feng S., Chen T., Zhang Y., Ke J.* & H. Yang, 2023. A multi-functional simulatio
 ### File Structure
 
 ```
-- simulator
--- input
-  -- graph.graphml
-  -- order.pickle
-  -- driver_info.pickle
--- output
-  -- some output files
--- test
-  -- test scripts
--- utils
-  -- driver_generation.py
-  -- find_closest_point.py
-  -- handle_raw_data.py
--- dispatch_alg.py
--- simulator_pattern.py
--- simulator_env.py
--- A2C.py
--- sarsa.py
--- main.py
--- config.py
--- LICENSE.md
--- api_doc.md
+- simulator_matching/
+  - main.py
+  - simulator_env.py
+  - matching_agent.py
+  - config.py
+  - input/
+  - output/
+  - utils/
+  
+- simulator_pricing/
+  - main.py
+  - simulator_env.py
+  - pricing_agent.py
+  - config.py
+  - input/
+  - output/
+  - utils/
+
+- simulator_reposition/
+  - main.py
+  - simulator_env.py
+  - reposition_agent.py
+  - config.py
+  - input/
+  - output/
+  - utils/
+
 - readme.md
 ```
 
@@ -162,15 +167,16 @@ re = mycollect.find_one(re_data)
 
 ##### Price Module
 
-You can set the maximum order price that is normally distributed and acceptable to passengers by modifing `maximum_price_passenger_can_tolerate_mean'` and `maximum_price_passenger_can_tolerate_std`.
+This module implements dynamic pricing based on trip distance, supply-demand conditions, and passenger cancellation behavior. The pricing agent can be configured as a static rule-based system or trained using tabular Q-learning to adaptively maximize platform revenue while retaining customer acceptance.
 
 ##### Cruising and Repositioning Module
 
+This module determines idle driver movements after order completion. Reinforcement learning strategies such as A2C or rule-based methods (random cruise, stay) are supported. It helps optimize system-wide occupancy rate and improves driver utilization across the grid.
 
 
 ##### Dispatching Module
 
-In dispatch_alg.py, we implement the function LD, we use binary map matching algorithm to dispatch orders.
+In dispatch_alg.py, we implement the function LD, we use binary map matching algorithm to dispatch orders. It supports various matching algorithms, including instant reward-based heuristics, Q-learning, and SARSA-based reinforcement learning. Matching weights can be dynamically adjusted based on state-action values learned during training.
 
 ##### Experiment
 
