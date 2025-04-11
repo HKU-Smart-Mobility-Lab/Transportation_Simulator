@@ -1,0 +1,19 @@
+total_reward                    4.013881e+04
+matched_request_num             6.272000e+03
+long_request_num                1.000000e-07
+matched_long_request_num        1.497000e+03
+matched_medium_request_num      2.206000e+03
+medium_request_num              1.000000e-07
+matched_short_request_num       2.569000e+03
+short_request_num               1.000000e-07
+total_request_num               3.296700e+04
+waiting_time                    1.923310e+02
+pickup_time                     5.314826e+01
+occupancy_rate                  8.037500e-01
+occupancy_rate_no_pickup        7.647516e-01
+matched_long_request_ratio      1.497000e+10
+matched_medium_request_ratio    2.206000e+10
+matched_short_request_ratio     2.569000e+10
+matched_request_ratio           1.902509e-01
+Name: 0, dtype: float64
+simulator.occupancy_rate_repo:0.039466666666666664
