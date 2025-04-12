@@ -1,13 +1,14 @@
 import pandas as pd
 
 from simulator_pattern import *
+from pricing_agent import PricingAgent
 from utilities import *
 np.warnings.filterwarnings('ignore', category=np.VisibleDeprecationWarning)
 import sys
 from config import sarsa_params
 
 class Simulator:
-    def __init__(self, **kwargs):
+    def __init__(self, pricing_agent: PricingAgent, **kwargs):
 
         # basic parameters: time & sample
         self.t_initial = kwargs['t_initial']
@@ -20,6 +21,9 @@ class Simulator:
         self.rl_mode = kwargs['rl_mode']
 
         self.requests = None
+
+        # Andrew :RL agents(RL module)
+        self.pricing_agent = pricing_agent
 
         # order generation
         self.order_sample_ratio = kwargs['order_sample_ratio']
@@ -145,7 +149,10 @@ class Simulator:
                     'trip_distance', 'start_time', 'origin_grid_id', 'dest_grid_id', 'itinerary_node_list',
                     'itinerary_segment_dis_list', 'trip_time', 'designed_reward', 'cancel_prob']
         self.requests = pd.DataFrame(request_list, columns=request_columns)
-        self.requests['designed_reward'] =  2.5 + 0.5 * ((1000 * self.requests['trip_distance'] - 322).clip(lower=0) / 322) #.astype(int)
+        # TODO:pricing agent定价
+        # Andrew: PricingAgent
+        initial_pricingState = self.get_pricing_state()
+        self.requests['designed_reward'] =  self.pricing_agent.get_action(initial_pricingState)
         self.requests['trip_time']  = self.requests['trip_distance'] / self.vehicle_speed * 3600
         self.requests['matching_time'] = 0
         self.requests['pickup_end_time'] = 0
@@ -188,85 +195,56 @@ class Simulator:
         self.initial_base_tables()
 
     def update_info_after_matching_multi_process(self, matched_pair_actual_indexes, matched_itinerary):
-        """
-        This function used to update driver table and wait requests after matching
-        :param matched_pair_actual_indexes: matched pair including driver id and order id
-        :param matched_itinerary: including driver pick up route info
-        :return: matched requests and wait requests
-        """
-        if self.rl_mode == 'reposition' and len(self.wait_requests) > 0:
-            # record number of idle drivers
-            # rl for repositioning
-            con_idle_or_repo = (self.driver_table['status'] == 0) | (self.driver_table['status'] == 4)
-            grid_id_idle_drivers = self.driver_table.loc[con_idle_or_repo, 'grid_id'].values
-            indices = np.where(grid_id_idle_drivers.reshape(grid_id_idle_drivers.size, 1) == self.zone_id_array)[1]
-            kd = np.bincount(indices)
-            idle_drivers_pre = np.zeros(env_params['grid_num'])
-            idle_drivers_pre[:len(kd)] = kd
-            idle_drivers_pre += 1
-
-            # record total revenue of  wait_requests
-            self.avg_revenue_by_grid = np.zeros(env_params['grid_num'])
-            group = self.wait_requests.loc[:, ['origin_grid_id', 'designed_reward']].groupby('origin_grid_id')
-            gsum = group.sum()
-            grid_id_array = np.array(gsum.index)
-            indices = np.where(grid_id_array.reshape(grid_id_array.size, 1) == self.zone_id_array)[1]
-            self.avg_revenue_by_grid[indices] = gsum['designed_reward'].values
-            self.avg_revenue_by_grid = self.avg_revenue_by_grid / idle_drivers_pre
-            # print('avg_revenue_by_grid: ', self.avg_revenue_by_grid)
-
-            # rl for repositioning
+        self.new_tracks = {}
+    
         new_matched_requests = pd.DataFrame([], columns=self.request_columns)
         update_wait_requests = pd.DataFrame([], columns=self.request_columns)
+    
         matched_pair_index_df = pd.DataFrame(matched_pair_actual_indexes, columns=['order_id', 'driver_id', 'weight', 'pickup_distance'])
-        # matched_pair_index_df = matched_pair_index_df.drop(columns=['flag'])
         matched_itinerary_df = pd.DataFrame(columns=['itinerary_node_list', 'itinerary_segment_dis_list', 'pickup_distance'])
+    
         if len(matched_itinerary) > 0:
             matched_itinerary_df['itinerary_node_list'] = matched_itinerary[0]
             matched_itinerary_df['itinerary_segment_dis_list'] = matched_itinerary[1]
             matched_itinerary_df['pickup_distance'] = matched_itinerary[2]
-
+    
         matched_order_id_list = matched_pair_index_df['order_id'].values.tolist()
         con_matched = self.wait_requests['order_id'].isin(matched_order_id_list)
         con_keep_wait = self.wait_requests['wait_time'] <= self.wait_requests['maximum_wait_time']
-
-        # price and pickup time info which used to judge whether cancel the order-driver pair
+    
         matched_itinerary_df['pickup_time'] = matched_itinerary_df['pickup_distance'].values / self.vehicle_speed * 3600
-
-        # extract the order is matched
         df_matched = self.wait_requests[con_matched].reset_index(drop=True)
+    
         if df_matched.shape[0] > 0:
             idle_driver_table = self.driver_table[(self.driver_table['status'] == 0) | (self.driver_table['status'] == 4)]
             order_array = df_matched['order_id'].values
-            cor_order = []
-            cor_driver = []
+            cor_order, cor_driver = [], []
             for i in range(len(matched_pair_index_df)):
                 cor_order.append(np.argwhere(order_array == matched_pair_index_df['order_id'][i])[0][0])
                 cor_driver.append(idle_driver_table[idle_driver_table['driver_id'] == matched_pair_index_df['driver_id'][i]].index[0])
             cor_driver = np.array(cor_driver)
             df_matched = df_matched.iloc[cor_order, :]
-            # driver decide whether cancelled
-            # 现在暂时不让其取消。需考虑时可用self.driver_cancel_prob_array来计算
+    
+            # 模拟司机不取消
             driver_cancel_prob = np.zeros(len(matched_pair_index_df))
             prob_array = np.random.rand(len(driver_cancel_prob))
             con_driver_remain = prob_array >= driver_cancel_prob
-
-            # price and pickup time moudle which used to judge whether cancel the order-driver pair
-            # matched_itinerary_df['pickup_time'].values
-            con_passenge_keep_wait = df_matched['maximum_pickup_time_passenger_can_tolerate'].values > \
-                                                        matched_itinerary_df['pickup_time'].values
-
-
-            con_passenger_remain = con_passenge_keep_wait
+    
+            # ✅ 模拟乘客取消（基于定价和接驾距离）
+            designed_price_array = df_matched['designed_reward'].values
+            pickup_dis_array = matched_itinerary_df['pickup_distance'].values
+            pickup_dis_array = np.nan_to_num(pickup_dis_array)
+            cancel_prob_array = 1 / (1 + np.exp(-(1.0 * (designed_price_array - 2.5) + 0.5 * pickup_dis_array)))
+            cancel_random_array = np.random.rand(len(cancel_prob_array))
+            con_passenger_remain = cancel_random_array > cancel_prob_array
+    
+            # ✅ 最终保留匹配的订单：司机不取消 & 乘客不取消
             con_remain = con_driver_remain & con_passenger_remain
-            # order after cancelled
+    
             update_wait_requests = df_matched[~con_remain]
-
-            # driver after cancelled
-            # 若匹配上后又被取消，目前假定司机按原计划继续cruising or repositioning
+    
             self.driver_table.loc[cor_driver[~con_remain], ['status', 'remaining_time', 'total_idle_time']] = 0
-
-            # order not cancelled
+    
             new_matched_requests = df_matched[con_remain]
             new_matched_requests['t_matched'] = self.time
             new_matched_requests['pickup_distance'] = matched_itinerary_df[con_remain]['pickup_distance'].values
@@ -274,20 +252,16 @@ class Simulator:
             new_matched_requests['t_end'] = self.time + new_matched_requests['pickup_time'].values + new_matched_requests['trip_time'].values
             new_matched_requests['status'] = 1
             new_matched_requests['driver_id'] = matched_pair_index_df[con_remain]['driver_id'].values
-
+    
             self.total_service_time += np.sum(new_matched_requests['trip_time'].values)
             extra_time = new_matched_requests['t_end'].values - self.t_end
             extra_time[extra_time < 0] = 0
             self.total_service_time -= np.sum(extra_time)
-            self.occupancy_rate_no_pickup = self.total_service_time / self.total_online_time    
-
-            # driver not cancelled
+            self.occupancy_rate_no_pickup = self.total_service_time / self.total_online_time
+    
             for grid_start in new_matched_requests['origin_grid_id'].values:
-                if grid_start not in self.grid_value.keys():
-                    self.grid_value[grid_start] = 1
-                else:
-                    self.grid_value[grid_start] += 1
-            
+                self.grid_value[grid_start] = self.grid_value.get(grid_start, 0) + 1
+    
             self.driver_table.loc[cor_driver[con_remain], 'status'] = 2
             self.driver_table.loc[cor_driver[con_remain], 'target_loc_lng'] = new_matched_requests['dest_lng'].values
             self.driver_table.loc[cor_driver[con_remain], 'target_loc_lat'] = new_matched_requests['dest_lat'].values
@@ -297,63 +271,48 @@ class Simulator:
             self.driver_table.loc[cor_driver[con_remain], 'total_idle_time'] = 0
             self.driver_table.loc[cor_driver[con_remain], 'time_to_last_cruising'] = 0
             self.driver_table.loc[cor_driver[con_remain], 'current_road_node_index'] = 0
-
-                # self.driver_table.loc[cor_driver[con_remain], 'itinerary_node_list'] = \
-                # (matched_itinerary_df[con_remain]['itinerary_node_list'] + new_matched_requests['itinerary_node_list']).apply(list).values
+    
             self.driver_table.loc[cor_driver[con_remain], 'itinerary_node_list'] = \
-            (matched_itinerary_df[con_remain]['itinerary_node_list'] + new_matched_requests['itinerary_node_list']).values
-            # except:
-            #     print(self.driver_table.loc[cor_driver[con_remain], 'itinerary_node_list'])
-            #     print(matched_itinerary_df[con_remain]['itinerary_node_list'])
-            #     print("itinerary_node_list")
-            #     print(new_matched_requests['itinerary_node_list'])
-
-            # try:
-            #     self.driver_table.loc[cor_driver[con_remain], 'itinerary_segment_dis_list'] = \
-            #         (matched_itinerary_df[con_remain]['itinerary_segment_dis_list'] + new_matched_requests['itinerary_segment_dis_list']).apply(list).values
-            # except:
-            #     print(self.driver_table.loc[cor_driver[con_remain], 'itinerary_segment_dis_list'])
-            #     print(matched_itinerary_df[con_remain]['itinerary_segment_dis_list'])
-            #     print("itinerary_segment_dis_list")
-            #     print(new_mat ched_requests['itinerary_segment_dis_list'])
+                (matched_itinerary_df[con_remain]['itinerary_node_list'] + new_matched_requests['itinerary_node_list']).values
+    
             self.driver_table.loc[cor_driver[con_remain], 'itinerary_segment_dis_list'] = \
                 (matched_itinerary_df[con_remain]['itinerary_segment_dis_list'] + new_matched_requests['itinerary_segment_dis_list']).values
+    
             self.driver_table.loc[cor_driver[con_remain], 'remaining_time_for_current_node'] = \
                 matched_itinerary_df[con_remain]['itinerary_segment_dis_list'].map(lambda x: x[0]).values / self.vehicle_speed * 3600
-
-
+    
             if self.track_recording_flag:
                 for j, index in enumerate(cor_driver[con_remain]):
                     driver_id = self.driver_table.loc[index, 'driver_id']
                     node_id_list = self.driver_table.loc[index, 'itinerary_node_list']
                     lng_array, lat_array, grid_id_array = self.RN.get_information_for_nodes(node_id_list)
                     time_array = np.cumsum(self.driver_table.loc[index, 'itinerary_segment_dis_list']) / self.vehicle_speed * 3600
-                    time_array = np.concatenate([np.array([self.time]), self.time + time_array])
+                    time_array = np.concatenate([[self.time], self.time + time_array])
                     delivery_time = len(new_matched_requests['itinerary_node_list'].values.tolist()[j])
                     pickup_time = len(time_array) - delivery_time
-                    task_type_array = np.concatenate([2 + np.zeros(pickup_time), 1 + np.zeros(delivery_time)])
+                    task_type_array = np.concatenate([2 * np.ones(pickup_time), 1 * np.ones(delivery_time)])
                     order_id = self.driver_table.loc[index, 'matched_order_id']
-
-                    self.requests.loc[self.requests['order_id'] == order_id,'matching_time'] = self.time
-
-                    self.new_tracks[driver_id] = np.vstack(
-                        [lat_array, lng_array, np.array([order_id] * len(lat_array)), np.array(node_id_list), grid_id_array, task_type_array,
-                         time_array]).T.tolist()
-
-                self.match_and_cancel_track[self.time] = [len(df_matched),len(new_matched_requests)]
-                    
-
-
-        update_wait_requests = pd.concat([update_wait_requests, self.wait_requests[~con_matched & con_keep_wait]],axis=0)
+    
+                    self.requests.loc[self.requests['order_id'] == order_id, 'matching_time'] = self.time
+                    self.new_tracks[driver_id] = np.vstack([
+                        lat_array, lng_array, np.array([order_id] * len(lat_array)),
+                        np.array(node_id_list), grid_id_array, task_type_array, time_array
+                    ]).T.tolist()
+    
+                self.match_and_cancel_track[self.time] = [len(df_matched), len(new_matched_requests)]
+    
+        update_wait_requests = pd.concat([update_wait_requests, self.wait_requests[~con_matched & con_keep_wait]], axis=0)
         self.waiting_time += np.sum(new_matched_requests['wait_time'].values)
         self.pickup_time += np.sum(new_matched_requests['pickup_time'].values)
-
+    
         long_added = new_matched_requests[new_matched_requests['trip_time'] >= 600].shape[0]
         short_added = new_matched_requests[new_matched_requests['trip_time'] <= 300].shape[0]
         self.matched_long_requests_num += long_added
         self.matched_short_requests_num += short_added
-        self.matched_medium_requests_num += (new_matched_requests.shape[0] - long_added - short_added)
+        self.matched_medium_requests_num += new_matched_requests.shape[0] - long_added - short_added
+    
         return new_matched_requests, update_wait_requests
+
 
     
     def step_bootstrap_new_orders(self):
@@ -400,16 +359,20 @@ class Simulator:
                 wait_info['start_time'] = self.time
                 wait_info['trip_distance'] = np.array(sampled_requests)[:, 7]
                 wait_info['trip_time'] = wait_info['trip_distance'] / self.vehicle_speed * 3600
-                wait_info['designed_reward'] = 2.5 + 0.5 * (
-                                            (wait_info['trip_distance'] * 1000 - 322).clip(lower=0) / 322
-                                            ) 
 
-                    # rl for matching
-                weight_array = wait_info['designed_reward'].values
+                # # TODO:pricing agent定价
+                # wait_info['designed_reward'] = 2.5 + 0.5 * (
+                #                             (wait_info['trip_distance'] * 1000 - 322).clip(lower=0) / 322
+                #                             ) 
+
+                #     # rl for matching
+                # weight_array = wait_info['designed_reward'].values
+
                 wait_info['wait_time'] = 0
                 wait_info['status'] = 0
                 wait_info['maximum_wait_time'] = self.maximum_wait_time_mean
-                wait_info['weight'] = weight_array
+
+                # wait_info['weight'] = weight_array
 
                 # passenger maximum tolerable price & pickup time
                 # wait_info['maximum_price_passenger_can_tolerate'] = np.full(len(wait_info), env_params['maximum_price_passenger_can_tolerate_mean'])
@@ -467,6 +430,7 @@ class Simulator:
         #         self.driver_table.loc[eligible_driver_index, 'target_loc_lng'] = lng_array
         #         self.driver_table.loc[eligible_driver_index, 'target_loc_lat'] = lat_array
         #         self.driver_table.loc[eligible_driver_index, 'target_grid_id'] = grid_id_array
+
         if self.cruise_flag:
             con_eligibe = (self.driver_table['total_idle_time'] > self.eligible_time_for_reposition) & \
                            (self.driver_table['status'] == 0)
@@ -842,53 +806,12 @@ class Simulator:
         # rl for matching
         return
 
-    def step(self):
-        """
-        This function used to run the simulator step by step
-        :return:
-        """
-        self.new_tracks = {}
-
-        # Step 1: order dispatching
-        wait_requests = deepcopy(self.wait_requests)
-        driver_table = deepcopy(self.driver_table)
-        matched_pair_actual_indexes, matched_itinerary = order_dispatch(wait_requests, driver_table, self.maximal_pickup_distance, self.dispatch_method)
-        # Step 2: driver/passenger reaction after dispatching
-        df_new_matched_requests, df_update_wait_requests = self.update_info_after_matching_multi_process(matched_pair_actual_indexes, matched_itinerary)
-        self.matched_requests = pd.concat([self.matched_requests, df_new_matched_requests], axis=0)
-        self.matched_requests = self.matched_requests.reset_index(drop=True)
-        self.wait_requests = df_update_wait_requests.reset_index(drop=True)
-
-        # Step 3: bootstrap new orders
-        self.order_generation()
-
-        # Step 4: both-rg-cruising and/or repositioning decision
-        self.cruise_and_reposition()
-
-        # Step 4.1: track recording
-        if self.track_recording_flag:
-            self.real_time_track_recording()
-
-        # Step 5: update next state for drivers
-        self.update_state()
-
-        # Step 6： online/offline update()
-        self.driver_online_offline_update()
-
-        # Step 7: update time
-        self.update_time()
-
-        return self.new_tracks
-
-    def rl_step(self, score_agent={}, epsilon=0): # rl for matching
+    def rl_step(self, epsilon=0): # rl for pricing
         """
         This function used to run the simulator step by step
         :return:
         """
         # self.new_tracks = {}
-
-        self.dispatch_transitions_buffer = [np.array([]).reshape([0, 2]), np.array([]), np.array([]).reshape([0, 2]),
-                                            np.array([]).astype(float)]  # rl for matching
 
         # Step 1: order dispatching
         wait_requests = deepcopy(self.wait_requests)
@@ -913,7 +836,16 @@ class Simulator:
             self.wait_requests = df_update_wait_requests.reset_index(drop=True)
 
         # Step 3: bootstrap new orders
-            self.step_bootstrap_new_orders(score_agent, epsilon)
+            self.step_bootstrap_new_orders()
+            # 在生成新订单之后，覆盖价格
+            if len(self.wait_requests) > 0 and self.pricing_agent is not None:
+                pricing_state = self.get_pricing_state()
+                pricing_action_array = self.pricing_agent.get_action(pricing_state, epsilon)
+
+                # 覆盖 wait_requests 最后一段新增的 designed_reward
+                self.wait_requests.loc[self.wait_requests.index[-len(pricing_action_array):], 'designed_reward'] = pricing_action_array
+                # ✅ 同步为匹配用的 weight
+                self.wait_requests['weight'] = self.wait_requests['designed_reward']
 
         # Step 4: both-rg-cruising and/or repositioning decision
         self.cruise_and_reposition()
@@ -931,132 +863,13 @@ class Simulator:
         # Step 7: update time
         self.update_time()
 
-        return self.dispatch_transitions_buffer   # rl for matching
+        # Step 8: update pricing agent
+        # ✅ 定价 agent 更新（基于 reward）
+        if self.pricing_agent is not None and self.pricing_agent.strategy == "dynamic":
+            reward = self.evaluate_pricing_result(df_new_matched_requests, len(matched_pair_actual_indexes))
+            self.pricing_agent.update(pricing_state, pricing_action_array, reward)
 
-# Andrew: Add the following functions for repositioning
-    def get_reposition_state(self):
-        """ 获取当前状态并转换为强化学习格式 """
-        grid_array, time_array, idle_drivers_by_grid, waiting_orders_by_grid = self.step1()
-        if len(grid_array) == 0:
-            return None, None
-
-        index_grid = np.where(grid_array.reshape(grid_array.size, 1) == self.zone_id_array)[1]
-        index_time = (time_array - self.t_initial) // self.delta_t
-
-        binary_index_grid = s2e(index_grid, total_len=7)
-        binary_index_time = s2e(index_time, total_len=18)
-
-        state_array = np.hstack([binary_index_grid, binary_index_time])
-
-        # 若使用 A2C_global_aware 方法，则加入全局信息
-        if self.reposition_method == 'A2C_global_aware':
-            global_idle_driver_array = np.tile(idle_drivers_by_grid, [state_array.shape[0], 1])
-            global_wait_orders_array = np.tile(waiting_orders_by_grid, [state_array.shape[0], 1])
-            state_array = np.hstack([state_array, global_idle_driver_array, global_wait_orders_array])
-
-        return state_array, index_grid
-
-    def execute_action(self, action_array):
-        """ 执行 `RepositionAgent` 选择的动作，并更新环境 """
-        # Step 5: update repositioning driver status
-        action_array = action_array.astype(int)  # rl for repositioning
-        self.update_repositioning_driver_status(action_array)  # rl for repositioning
-        # self.cruise_and_reposition()
-        # Step 6: update next state and time
-        self.update_state()
-        self.update_time()
-        return        
-
-    def store_experience(self, state, action, reward, next_state):
-        """ 存储强化学习训练数据 """
-        self.state_grid_array_done.append(state)
-        self.action_array_done.append(action)
-        self.reward_array_done.append(reward)
-        self.next_state_grid_array_done.append(next_state)
-
-    def get_transitions(self):
-        """ 获取 `state`, `action`, `reward`, `next_state`, `done` 数据 """
-        grid_array = self.state_grid_array_done
-        time_array = self.state_time_array_done
-        action_array = self.action_array_done.astype(int)
-        next_grid_array = self.next_state_grid_array_done
-        next_time_array = self.next_state_time_array_done
-        reward_array = self.reward_array_done
-        done_array = np.zeros(grid_array.shape)
-
-        index_grid = np.where(grid_array.reshape(grid_array.size, 1) == self.zone_id_array)[1]
-        index_time = (time_array - self.t_initial) // self.delta_t
-        binary_index_grid = s2e(index_grid, total_len=7)
-        binary_index_time = s2e(index_time, total_len=18)
-        state_array = np.hstack([binary_index_grid, binary_index_time])
-
-        index_next_grid = np.where(next_grid_array.reshape(next_grid_array.size, 1) == self.zone_id_array)[1]
-        index_next_time = (next_time_array - self.t_initial) // self.delta_t
-        binary_index_next_grid = s2e(index_next_grid, total_len=7)
-        binary_index_next_time = s2e(index_next_time, total_len=18)
-        next_state_array = np.hstack([binary_index_next_grid, binary_index_next_time])
-
-        if self.reposition_method == 'A2C_global_aware':
-            index_time = np.where(time_array.reshape(time_array.size, 1) == np.array(self.global_time))[1]
-            global_idle_driver_array = np.array(self.global_drivers_num)[index_time, :]
-            global_wait_orders_array = np.array(self.global_orders_num)[index_time, :]
-            state_array = np.hstack([state_array, global_idle_driver_array, global_wait_orders_array])
-
-            next_time_array = ((next_time_array - self.t_initial) // self.delta_t) * self.delta_t + self.t_initial
-            index_next_time = np.where(next_time_array.reshape(next_time_array.size, 1) == np.array(self.global_time))[1]
-            global_next_idle_driver_array = np.array(self.global_drivers_num)[index_next_time, :]
-            global_next_wait_orders_array = np.array(self.global_orders_num)[index_next_time, :]
-            next_state_array = np.hstack([next_state_array, global_next_idle_driver_array, global_next_wait_orders_array])
-
-        return [state_array, action_array, reward_array, next_state_array, done_array]
-
-
-
-    def step1(self): # rl for repositioning
-        # Step 1: bipartite matching
-        wait_requests = deepcopy(self.wait_requests)
-        driver_table = deepcopy(self.driver_table)
-        # matched_pair_actual_indexes = KM_simulation(wait_requests, driver_table, self.method, self.maximal_pickup_distance * 1000)
-        matched_pair_actual_indexes,matched_itinerary = order_dispatch(wait_requests, driver_table, self.maximal_pickup_distance ,self.dispatch_method )
-
-        # Step 
-        # removed matched requests from wait list, and put them into matched list
-        # delete orders with too much waiting time
-        self.cumulative_on_trip_driver_num += self.driver_table[self.driver_table['status'] == 1].shape[0]
-        self.cumulative_on_trip_driver_num += self.driver_table[self.driver_table['status'] == 2].shape[0]
-        self.cumulative_on_reposition_driver_num += self.driver_table[self.driver_table['status'] == 4].shape[0]
-        print(f"Driver status == 0: {self.driver_table[self.driver_table['status'] == 0].shape[0]},Driver status == 1: {self.driver_table[self.driver_table['status'] == 1].shape[0]}, Drivers status == 2: {self.driver_table[self.driver_table['status'] == 2].shape[0]},Drivers status == 3: {self.driver_table[self.driver_table['status'] == 3].shape[0]}, Driver status == 4: {self.driver_table[self.driver_table['status'] == 4].shape[0]}")
-        self.occupancy_rate_repo = self.cumulative_on_reposition_driver_num / ((1 + self.current_step) * self.driver_table.shape[0])
-        self.occupancy_rate = self.cumulative_on_trip_driver_num / ((1 + self.current_step) * self.driver_table.shape[0])
-        df_new_matched_requests, df_update_wait_requests = self.update_info_after_matching_multi_process(matched_pair_actual_indexes,matched_itinerary)
-        if self.end_of_episode == 0:
-            self.matched_requests = pd.concat([self.matched_requests, df_new_matched_requests], axis=0)
-            self.matched_requests = self.matched_requests.reset_index(drop=True)
-            self.wait_requests = df_update_wait_requests.reset_index(drop=True)
-        self.matched_requests_num += len(df_new_matched_requests)
-        print("new matched orders: ", len(df_new_matched_requests))
-        # TJ
-        if len(df_new_matched_requests) != 0:
-            self.total_reward += np.sum(df_new_matched_requests['designed_reward'].values)
-        else:
-            self.total_reward += 0
-        # TJ
-        # Step 3: generate new orders
-        self.step_bootstrap_new_orders()
-
-        # Step 4: generate states of the repositioning drivers
-        state_list = self.generate_repo_driver_state()   # rl for repositioning
-        return state_list   # rl for repositioning
-
-    def step2(self, action_array):  # rl for repositioning （即execute action）
-        # Step 5: update repositioning driver status
-        action_array = action_array.astype(int)  # rl for repositioning
-        self.update_repositioning_driver_status(action_array)  # rl for repositioning
-        # self.cruise_and_reposition()
-        # Step 6: update next state and time
-        self.update_state()
-        self.update_time()
-        return
+        return 
 
 # Add changes for pricing module: Andrew
     def get_pricing_state(self):
@@ -1064,36 +877,18 @@ class Simulator:
         获取与定价相关的状态
         """
         return {
-            "trip_distances": self.requests['trip_distance'].tolist(),  # 每个订单的距离
+            "trip_distances": self.requests['trip_distance'],  # 每个订单的距离
             "supply": self.driver_table[self.driver_table['status'] == 0].shape[0],  # 空闲司机数量
             "demand": self.requests.shape[0],  # 当前订单数量
         }
     
-    def evaluate_pricing_result(self, price_list):
-        """
-        模拟乘客对定价的反应，生成 reward。
-        """
-        trip_distances = self.requests['trip_distance'].tolist()
-        accepted_orders = 0
+    def evaluate_pricing_result(self, retained_orders, total_order_count):
+        if total_order_count == 0:
+            return 0.0
+        acceptance_rate = len(retained_orders) / total_order_count
+        average_price = retained_orders['designed_reward'].mean() if len(retained_orders) > 0 else 0.0
+        return acceptance_rate * average_price
 
-        for p, d in zip(price_list, trip_distances):
-            # 示例取消概率函数（可调）
-            cancel_prob = min(1.0, max(0.0, (p - 2.5) * 0.5 + d * 0.1))
-            if np.random.rand() > cancel_prob:
-                accepted_orders += 1
-
-        return accepted_orders / max(len(trip_distances), 1)  # 平均接受率作为 reward
-
-    def get_pricing_feedback(self):
-        prices = self.requests['designed_reward'].values
-        pickup_distances = self.requests['pickup_distance'].values  # 确保你有这个字段
-        rewards = []
-    
-        for price, dist in zip(prices, pickup_distances):
-            retention_prob = 1 / (1 + np.exp(-(1.0 * (price - 2.5) + 0.1 * dist)))
-            rewards.append(1 - retention_prob)  # 即乘客是否接受：作为 reward
-    
-        return np.array(rewards)
 
     def exectue_pricing_action(self, pricing_action):
         """

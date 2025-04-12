@@ -200,6 +200,43 @@ def get_exponential_epsilons(initial_epsilon, final_epsilon, steps, decay=0.99, 
 
     return np.array(epsilons)
 
+# Andrew: modified cruising function 
+def cruising(eligible_driver_table, mode):
+    """
+    :param eligible_driver_table: information of eligible driver.
+    :type eligible_driver_table: pandas.DataFrame
+    :param mode: the type of both-rg-cruising, if type is random; it can cruise to every node with equal
+                probability; if the type is nearby, it will cruise to the node in adjacent grid or
+                just stay at the original region.
+    :type mode: string
+    :return: itinerary_node_list, itinerary_segment_dis_list, dis_array
+    :rtype: tuple
+    """
+    dest_array = []
+    grid_id_list = eligible_driver_table.loc[:, 'grid_id'].values
+
+    for grid_id in grid_id_list:
+        if mode == "global-random":
+            random_number = random.choice(df_neighbor_centroid['zone_id'].values)
+        elif mode == 'random':
+            target = [grid_id]
+            neighbors = df_neighbor_centroid[df_neighbor_centroid['zone_id'] == grid_id].iloc[0]
+            for direction in ['up', 'down', 'left', 'right']:
+                neighbor_id = neighbors[direction]
+                if neighbor_id != grid_id:
+                    target.append(neighbor_id)
+            random_number = choice(target)
+        
+        record = df_neighbor_centroid[df_neighbor_centroid['zone_id'] == random_number]
+        if len(record) > 0:
+            dest_array.append([record.iloc[0]['centroid_lng'], record.iloc[0]['centroid_lat']])
+        else:
+            dest_array.append([df_neighbor_centroid.iloc[0]['centroid_lng'], df_neighbor_centroid.iloc[0]['centroid_lat']])
+    
+    coord_array = eligible_driver_table.loc[:, ['lng', 'lat']].values
+    itinerary_node_list, itinerary_segment_dis_list, dis_array = route_generation_array(coord_array, np.array(dest_array))
+    return itinerary_node_list, itinerary_segment_dis_list, dis_array
+
 
 def get_real_coord_given_current_next_coord(coord1, coord2, d):
     '''

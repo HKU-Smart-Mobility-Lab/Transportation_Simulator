@@ -450,8 +450,28 @@ class Simulator:
 
                     if self.method == 'instant_reward_no_subway':
                         weight_array = wait_info['designed_reward'].values
+
                     elif self.method == 'pickup_distance':
                         pass
+
+                    elif self.method == ['sarsa', 'sarsa_no_subway']:
+                        for i, (travel_time, reward, dest_grid_id) in enumerate(zip(
+                                wait_info['trip_time'].values.tolist(),
+                                wait_info['designed_reward'].values.tolist(),
+                                wait_info['dest_grid_id'].values.tolist())):
+
+                            end_time_slice = int((self.time + 0.5 * self.maximal_pickup_distance / self.vehicle_speed * 3600 + travel_time - self.t_initial - 1) / LEN_TIME_SLICE)
+
+                            if end_time_slice >= num_slices:
+                                original_trip_score = reward
+                            else:
+                                next_state = State(end_time_slice, int(dest_grid_id))
+                                max_q = max(score_agent.strategy.q_value_table.get((next_state, a), 0.0) for a in score_agent.strategy.actions)
+
+                                original_trip_score = reward + (
+                                    qTable_params['discount_rate'] ** (end_time_slice - current_time_slice)) * max_q
+                            weight_array[i] = original_trip_score
+                            self.transfer_request_num += 1   
                     
                     elif self.method == 'q_learning':
                         for i, (travel_time, reward, dest_grid_id) in enumerate(zip(
