@@ -24,14 +24,14 @@ Establish an open-sourced network-based simulation platform for shared mobility 
 
 2. Pull the docker image
 
-  `docker pull jingyunliu663/simulator`
+  `docker pull jingyunliu663/manhattan_mcts`
 
 - after running the code, you can use `docker images` to check whether the image is available
 - the docker image comes with the conda environment `new_simulator` and the mongoDB service running in background within the container
 
 3. Run the docker image & get a docker container
 ```bash
-docker run -d -e CRYPTOGRAPHY_OPENSSL_NO_LEGACY=1 -v /path/to/the/Transportation_Simulator:/simulator/scripts --name simulator jingyunliu663/simulator
+docker run -d -e CRYPTOGRAPHY_OPENSSL_NO_LEGACY=1 -v /path/to/the/Transportation_Simulator/simulator_module:/simulator/scripts --name simulator jingyunliu663/manhattan_mcts
 ```
 - Arguments:
   - `-d`: detach, run in background
@@ -43,7 +43,7 @@ docker run -d -e CRYPTOGRAPHY_OPENSSL_NO_LEGACY=1 -v /path/to/the/Transportation
 
 4. Enter the interactive shell of the conatiner `simulator`
 ```bash
-docker exec -it simulator /bin/bash
+docker exec -it simulator bash -c "cd / && exec bash"
 ```
 
 - After enter the interactive shell , you will be in the working directory `/simulator`, you can navigate yourself to  `/simulator/scripts` directory (the directory you choose to mount to) to run the main function
