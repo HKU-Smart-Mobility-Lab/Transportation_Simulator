@@ -197,7 +197,7 @@ We compare baseline and RL-based repositioning strategies under the following se
 > A2C improves platform revenue and driver utilization, showing the effectiveness of reinforcement learning in repositioning.
 
 
-Matching Module
+Dispatching Module
 
 Under the following matching environment:
 - `driver_num`: 100  
