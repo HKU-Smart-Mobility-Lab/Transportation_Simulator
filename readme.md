@@ -179,7 +179,7 @@ In dispatch_alg.py, we implement the function LD, we use binary map matching alg
 
 ### Experiment
 
-You can modify the parameters in [config.py](https://github.com/HKU-Smart-Mobility-Lab/Transpotation_Simulator/blob/main/simulator/config.py), and then excute `python main.py`. The records will be recorded in the directory named output.
+You can modify the parameters in [config.py](https://github.com/HKU-Smart-Mobility-Lab/Transpotation_Simulator/blob/main/simulator/config.py), and then excute `python main.py`. The records will be recorded in the directory named output.We conduct a set of reinforcement learning (RL) based experiments to validate the effectiveness of the simulator in supporting algorithm testing for matching and repositioning modules.
 
 Reposition Module
 
