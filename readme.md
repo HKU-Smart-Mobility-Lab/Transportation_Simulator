@@ -47,7 +47,6 @@ docker exec -it simulator bash -c "cd / && exec bash"
 ```
 
 - After enter the interactive shell , you will be in the working directory `/simulator`, you can navigate yourself to  `/simulator/scripts` directory (the directory you choose to mount to) to run the main function
-- You have to activate the conda environment: `conda activate new_simulator` 
 
 
 ### Download Data
@@ -181,6 +180,42 @@ In dispatch_alg.py, we implement the function LD, we use binary map matching alg
 ##### Experiment
 
 You can modify the parameters in [config.py](https://github.com/HKU-Smart-Mobility-Lab/Transpotation_Simulator/blob/main/simulator/config.py), and then excute `python main.py`. The records will be recorded in the directory named output.
+
+---
+
+Reposition Module
+
+We compare baseline and RL-based repositioning strategies under the following setting:
+- `driver_num`: 200  
+- `order_sample_ratio`: 0.5  
+- `driver_sample_ratio`: 1.0  
+- `maximal_pickup_distance`: 1.25 km  
+
+| Method                 | Platform Revenue | Matching Rate | Occupancy Rate | Pickup Time | Waiting Time |
+|------------------------|------------------|----------------|----------------|--------------|----------------|
+| RandomCruise (Baseline) | 38865             | 18.47%         | 77.51%         | **51.72**     | 193.35         |
+| A2C (RL)               | **40139**         | **19.03%**     | **80.38%**     | 53.15         | **192.33**     |
+
+> A2C improves platform revenue and driver utilization, showing the effectiveness of reinforcement learning in repositioning.
+
+---
+
+Matching Module
+
+Under the following matching environment:
+- `driver_num`: 100  
+- `order_sample_ratio`: 0.05  
+- `driver_sample_ratio`: 1.0  
+- `maximal_pickup_distance`: 1.00 km  
+
+| Method                   | Platform Revenue | Matching Rate | Occupancy Rate | Pickup Time | Waiting Time |
+|--------------------------|------------------|----------------|----------------|--------------|----------------|
+| Instant Reward (Baseline) | 20864             | 96.84%         | 10.64%         | 293.22        | 132.63         |
+| Q-Learning               | **21087**         | **97.83%**     | **10.75%**     | **289.15**    | 136.10         |
+| SARSA (Epoch=200)        | 21079             | 97.75%         | 10.74%         | 291.66        | **132.34**     |
+| SARSA (Epoch=400)        | 21055             | 97.65%         | 10.72%         | 291.95        | 133.80         |
+
+> RL-based matching (SARSA, Q-Learning) further improves dispatch performance over the heuristic baseline, demonstrating its capability to learn effective value-based strategies.
 
 ### Tutorials
 
