@@ -35,14 +35,14 @@ Establish an open-sourced network-based simulation platform for shared mobility 
 
 2. Pull the docker image
 
-  `docker pull jingyunliu663/simulator`
+  `docker pull jingyunliu663/manhattan_mcts`
 
 - after running the code, you can use `docker images` to check whether the image is available
 - the docker image comes with the conda environment `new_simulator` and the mongoDB service running in background within the container
 
 3. Run the docker image & get a docker container
 ```bash
-docker run -d -e CRYPTOGRAPHY_OPENSSL_NO_LEGACY=1 -v /path/to/the/Transportation_Simulator:/simulator/scripts --name simulator jingyunliu663/simulator
+docker run -d -e CRYPTOGRAPHY_OPENSSL_NO_LEGACY=1 -v /path/to/the/Transportation_Simulator/simulator_module:/simulator/scripts --name simulator jingyunliu663/manhattan_mcts
 ```
 - Arguments:
   - `-d`: detach, run in background
@@ -54,11 +54,10 @@ docker run -d -e CRYPTOGRAPHY_OPENSSL_NO_LEGACY=1 -v /path/to/the/Transportation
 
 4. Enter the interactive shell of the conatiner `simulator`
 ```bash
-docker exec -it simulator /bin/bash
+docker exec -it simulator bash -c "cd / && exec bash"
 ```
 
 - After enter the interactive shell , you will be in the working directory `/simulator`, you can navigate yourself to  `/simulator/scripts` directory (the directory you choose to mount to) to run the main function
-- You have to activate the conda environment: `conda activate new_simulator` 
 
 
 ### Download Data
@@ -176,22 +175,55 @@ re = mycollect.find_one(re_data)
 ```
 
 
-##### Price Module
+### Price Module
 
 This module implements dynamic pricing based on trip distance, supply-demand conditions, and passenger cancellation behavior. The pricing agent can be configured as a static rule-based system or trained using tabular Q-learning to adaptively maximize platform revenue while retaining customer acceptance.
 
-##### Cruising and Repositioning Module
+### Cruising and Repositioning Module
 
 This module determines idle driver movements after order completion. Reinforcement learning strategies such as A2C or rule-based methods (random cruise, stay) are supported. It helps optimize system-wide occupancy rate and improves driver utilization across the grid.
 
 
-##### Dispatching Module
+### Dispatching Module
 
 In dispatch_alg.py, we implement the function LD, we use binary map matching algorithm to dispatch orders. It supports various matching algorithms, including instant reward-based heuristics, Q-learning, and SARSA-based reinforcement learning. Matching weights can be dynamically adjusted based on state-action values learned during training.
 
-##### Experiment
+### Experiment
 
-You can modify the parameters in [config.py](https://github.com/HKU-Smart-Mobility-Lab/Transpotation_Simulator/blob/main/simulator/config.py), and then excute `python main.py`. The records will be recorded in the directory named output.
+You can modify the parameters in [config.py](https://github.com/HKU-Smart-Mobility-Lab/Transpotation_Simulator/blob/main/simulator/config.py), and then excute `python main.py`. The records will be recorded in the directory named output.We conduct a set of reinforcement learning (RL) based experiments to validate the effectiveness of the simulator in supporting algorithm testing for matching and repositioning modules.
+
+Reposition Module
+
+We compare baseline and RL-based repositioning strategies under the following setting:
+- `driver_num`: 200  
+- `order_sample_ratio`: 0.5  
+- `driver_sample_ratio`: 1.0  
+- `maximal_pickup_distance`: 1.25 km  
+
+| Method                 | Platform Revenue | Matching Rate | Occupancy Rate | Pickup Time | Waiting Time |
+|------------------------|------------------|----------------|----------------|--------------|----------------|
+| RandomCruise (Baseline) | 38865             | 18.47%         | 77.51%         | **51.72**     | 193.35         |
+| A2C (RL)               | **40139**         | **19.03%**     | **80.38%**     | 53.15         | **192.33**     |
+
+> A2C improves platform revenue and driver utilization, showing the effectiveness of reinforcement learning in repositioning.
+
+
+Dispatching Module
+
+Under the following matching environment:
+- `driver_num`: 100  
+- `order_sample_ratio`: 0.05  
+- `driver_sample_ratio`: 1.0  
+- `maximal_pickup_distance`: 1.00 km  
+
+| Method                   | Platform Revenue | Matching Rate | Occupancy Rate | Pickup Time | Waiting Time |
+|--------------------------|------------------|----------------|----------------|--------------|----------------|
+| Instant Reward (Baseline) | 20864             | 96.84%         | 10.64%         | 293.22        | 132.63         |
+| Q-Learning               | **21087**         | **97.83%**     | **10.75%**     | **289.15**    | 136.10         |
+| SARSA (Epoch=200)        | 21079             | 97.75%         | 10.74%         | 291.66        | **132.34**     |
+| SARSA (Epoch=400)        | 21055             | 97.65%         | 10.72%         | 291.95        | 133.80         |
+
+> RL-based matching (SARSA, Q-Learning) further improves dispatch performance over the heuristic baseline, demonstrating its capability to learn effective value-based strategies.
 
 ### Tutorials
 
