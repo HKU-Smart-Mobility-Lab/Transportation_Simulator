@@ -164,24 +164,22 @@ re = mycollect.find_one(re_data)
 ```
 
 
-##### Price Module
+### Price Module
 
 This module implements dynamic pricing based on trip distance, supply-demand conditions, and passenger cancellation behavior. The pricing agent can be configured as a static rule-based system or trained using tabular Q-learning to adaptively maximize platform revenue while retaining customer acceptance.
 
-##### Cruising and Repositioning Module
+### Cruising and Repositioning Module
 
 This module determines idle driver movements after order completion. Reinforcement learning strategies such as A2C or rule-based methods (random cruise, stay) are supported. It helps optimize system-wide occupancy rate and improves driver utilization across the grid.
 
 
-##### Dispatching Module
+### Dispatching Module
 
 In dispatch_alg.py, we implement the function LD, we use binary map matching algorithm to dispatch orders. It supports various matching algorithms, including instant reward-based heuristics, Q-learning, and SARSA-based reinforcement learning. Matching weights can be dynamically adjusted based on state-action values learned during training.
 
-##### Experiment
+### Experiment
 
 You can modify the parameters in [config.py](https://github.com/HKU-Smart-Mobility-Lab/Transpotation_Simulator/blob/main/simulator/config.py), and then excute `python main.py`. The records will be recorded in the directory named output.
-
----
 
 Reposition Module
 
@@ -198,7 +196,6 @@ We compare baseline and RL-based repositioning strategies under the following se
 
 > A2C improves platform revenue and driver utilization, showing the effectiveness of reinforcement learning in repositioning.
 
----
 
 Matching Module
 
