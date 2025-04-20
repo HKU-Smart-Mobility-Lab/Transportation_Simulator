@@ -8,6 +8,7 @@ simulator_matching/episode_600/
 simulator_matching/matching_strategy_base/episode_0/
 simulator_matching/matching_strategy_base/episode_200/
 simulator_matching/matching_strategy_base/episode_400/
+simulator_matching/output_rl_sarsa.log
 simulator_matching/models/
 simulator_matching/output3/
 simulator_matching/wandb/

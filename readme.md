@@ -43,11 +43,10 @@ docker run -d -e CRYPTOGRAPHY_OPENSSL_NO_LEGACY=1 -v /path/to/the/Transportation
 
 4. Enter the interactive shell of the conatiner `simulator`
 ```bash
-docker exec -it simulator /bin/bash
+docker exec -it simulator bash -c "cd / && exec bash"
 ```
 
-- After enter the interactive shell , you will be in the working directory `/simulator`, you can navigate yourself to  `/simulator/scripts` directory (the directory you choose to mount to) to run the main function
-- You have to activate the conda environment: `conda activate new_simulator` 
+- After enter the interactive shell , you will be in the working directory `/simulator`(the directory you choose to mount to), you can navigate yourself to  `/simulator/scripts` directory to run the main function
 
 
 ### Download Data
