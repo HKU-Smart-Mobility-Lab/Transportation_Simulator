@@ -15,3 +15,7 @@ simulator_reposition/log/
 simulator_reposition/models/
 simulator_reposition/saved_models/
 simulator_reposition/wandb/
+simulator_matching/matching_train_logs/
+simulator_pricing/modelstraining_results_record
+simulator_pricing/output.log
+simulator_pricing/wandb/

@@ -4,7 +4,7 @@ env_params = {
     'delta_t': 60,  # note: need to be the same as 'request_interval'
     'vehicle_speed': 22.788,  # km / h
     'repo_speed': 22.788,  # need to be the same as vehicl speed
-    'order_sample_ratio': 0.5, # TODO 
+    'order_sample_ratio': 0.1, # TODO 
     'order_generation_mode': 'sample_from_base',
     'driver_sample_ratio': 1,
     'maximum_wait_time_mean': 300,
@@ -20,7 +20,7 @@ env_params = {
     'pickup_mode': 'rg',
     'max_idle_time': 300,
     'cruise_mode': 'random',
-    'reposition_flag': True,
+    'reposition_flag': False,
     'eligible_time_for_reposition': 300,  # s
     'reposition_mode': '',
     'track_recording_flag': False,
@@ -32,12 +32,13 @@ env_params = {
     'dispatch_method': 'LD',  # LD: lagarange decomposition method designed by Peibo Duan
     # 'method': 'instant_reward_no_subway',
     # 'simulator_mode': 'toy_mode',
-    'experiment_mode': 'test',  # train / test
-    'driver_num': 200, # TODO
+    'experiment_mode': 'train',  # train / test
+    'driver_num': 100, # TODO
     'price_per_km': 5,  # $ / km
     'road_information_mode': 'load',
     'price_increasing_percentage': 0,
-    'rl_mode': 'reposition',  # reposition and matching
+    'rl_mode': 'pricing',  # reposition, matching and pricing
+    'pricing_strategy': 'dynamic',  # static / dynamic
     'method': 'instant_reward_no_subway',
     # 'sarsa_no_subway' / 'pickup_distance' / 'instant_reward_no_subway'   #  rl for matching
     'reposition_method': 'random_cruise',  # A2C, A2C_global_aware, random_cruise, stay  # rl for repositioning
@@ -54,7 +55,7 @@ LEN_TIME_SLICE = 300  # the length of a time slice, 5 minute (300 seconds) in th
 LEN_TIME = 6 * 60 * 60  # 3 hours
 # NUM_EPOCH = 4001  # 4001 / 3001
 FLAG_LOAD = False
-sarsa_params = dict(learning_rate=0.005, discount_rate=0.95)  # parameters in sarsa algorithm
+pricing_params = dict(learning_rate=0.005, discount_rate=0.95, strategy='dynamic')  # parameters in sarsa algorithm
 #  rl for matching
 
 # rl for repositioning

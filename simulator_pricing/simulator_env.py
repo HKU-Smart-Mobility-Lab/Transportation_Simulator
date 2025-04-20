@@ -5,10 +5,10 @@ from pricing_agent import PricingAgent
 from utilities import *
 np.warnings.filterwarnings('ignore', category=np.VisibleDeprecationWarning)
 import sys
-from config import sarsa_params
+from config import pricing_params
 
 class Simulator:
-    def __init__(self, pricing_agent: PricingAgent, **kwargs):
+    def __init__(self, **kwargs):
 
         # basic parameters: time & sample
         self.t_initial = kwargs['t_initial']
@@ -23,7 +23,7 @@ class Simulator:
         self.requests = None
 
         # Andrew :RL agents(RL module)
-        self.pricing_agent = pricing_agent
+        # self.pricing_agent = pricing_agent
 
         # order generation
         self.order_sample_ratio = kwargs['order_sample_ratio']
@@ -151,8 +151,7 @@ class Simulator:
         self.requests = pd.DataFrame(request_list, columns=request_columns)
         # TODO:pricing agent定价
         # Andrew: PricingAgent
-        initial_pricingState = self.get_pricing_state()
-        self.requests['designed_reward'] =  self.pricing_agent.get_action(initial_pricingState)
+        self.requests['designed_reward'] =  2.5 + 0.5 * ((1000 * self.requests['trip_distance'] - 322).clip(lower=0) / 322) #.astype(int)
         self.requests['trip_time']  = self.requests['trip_distance'] / self.vehicle_speed * 3600
         self.requests['matching_time'] = 0
         self.requests['pickup_end_time'] = 0
@@ -233,10 +232,14 @@ class Simulator:
             # ✅ 模拟乘客取消（基于定价和接驾距离）
             designed_price_array = df_matched['designed_reward'].values
             pickup_dis_array = matched_itinerary_df['pickup_distance'].values
-            pickup_dis_array = np.nan_to_num(pickup_dis_array)
-            cancel_prob_array = 1 / (1 + np.exp(-(1.0 * (designed_price_array - 2.5) + 0.5 * pickup_dis_array)))
-            cancel_random_array = np.random.rand(len(cancel_prob_array))
-            con_passenger_remain = cancel_random_array > cancel_prob_array
+            designed_price_array = np.array(designed_price_array, dtype=float)
+            pickup_dis_array = np.array(pickup_dis_array, dtype=float)
+
+            cancel_prob_array = 0.05 + 0.005 * (designed_price_array - 2.5) + 0.05 * pickup_dis_array
+            cancel_prob_array = np.clip(cancel_prob_array, 0, 0.9)
+            print(cancel_prob_array)
+            threshold = 0.9  # ✅ 越高，保留的订单越多
+            con_passenger_remain = cancel_prob_array < threshold
     
             # ✅ 最终保留匹配的订单：司机不取消 & 乘客不取消
             con_remain = con_driver_remain & con_passenger_remain
@@ -797,6 +800,7 @@ class Simulator:
         This function used to count time
         :return:
         """
+        # 每一次仿真推进一个时间步
         self.time += self.delta_t
         self.current_step = int((self.time - self.t_initial) // self.delta_t)
 
@@ -806,81 +810,102 @@ class Simulator:
         # rl for matching
         return
 
-    def rl_step(self, epsilon=0): # rl for pricing
+    def rl_step(self, pricing_agent:PricingAgent, epsilon=0):
         """
         This function used to run the simulator step by step
-        :return:
+        :return: transitions buffer for pricing agent update
         """
-        # self.new_tracks = {}
+        print("-----------rl step----------------")
 
+        pricing_transitions_buffer = [[], [], [], []]  # [state, action, next_state, reward]
+    
+        # Step 1: pricing agent gets action (reprice new orders)
+        functional_pricing = False
+        if len(self.wait_requests) > 0 and pricing_agent is not None:
+            print("pricing agent functions")
+            functional_pricing = True
+            # S
+            pricing_state_current = self.get_pricing_state()
+            s0 = [pricing_state_current['time_slice'], 
+                    pricing_state_current['supply'], 
+                    pricing_state_current['demand']]
+            # A
+            pricing_action_current = pricing_agent.get_action(pricing_state_current, epsilon)
+    
+            # Assign price to newly generated requests
+            self.wait_requests.loc[self.wait_requests.index[-len(pricing_action_current[1]):], 'designed_reward'] = pricing_action_current[1]
+            self.wait_requests['weight'] = self.wait_requests['designed_reward']
+    
         # Step 1: order dispatching
         wait_requests = deepcopy(self.wait_requests)
         driver_table = deepcopy(self.driver_table)
-        matched_pair_actual_indexes, matched_itinerary = order_dispatch(wait_requests, driver_table,
-                                                                        self.maximal_pickup_distance,
-                                                                        self.dispatch_method)
+        matched_pair_actual_indexes, matched_itinerary = order_dispatch(
+            wait_requests, driver_table, self.maximal_pickup_distance, self.dispatch_method)
+    
         # Step 2: driver/passenger reaction after dispatching
         df_new_matched_requests, df_update_wait_requests = self.update_info_after_matching_multi_process(
             matched_pair_actual_indexes, matched_itinerary)
+        self.matched_requests_num += len(df_new_matched_requests)
 
-        # self.total_reward += np.sum(df_new_matched_requests['immediate_reward'].values)
-        # TJ
-        if len(df_new_matched_requests) != 0:
+        # Step 3: reward calculation
+        if len(df_new_matched_requests) > 0:
             self.total_reward += np.sum(df_new_matched_requests['designed_reward'].values)
         else:
             self.total_reward += 0
-        # TJ
+        # R
+        reward = np.sum(df_new_matched_requests['designed_reward'].values)
+    
+        # Step 4: update matched/wait requests
+        print("end of episode", self.end_of_episode)
         if self.end_of_episode == 0:
-            self.matched_requests = pd.concat([self.matched_requests, df_new_matched_requests], axis=0)
-            self.matched_requests = self.matched_requests.reset_index(drop=True)
+            self.matched_requests = pd.concat([self.matched_requests, df_new_matched_requests], axis=0).reset_index(drop=True)
             self.wait_requests = df_update_wait_requests.reset_index(drop=True)
-
-        # Step 3: bootstrap new orders
+            # Step 4.1: bootstrap new orders
+            print("bootstrap new orders")
             self.step_bootstrap_new_orders()
-            # 在生成新订单之后，覆盖价格
-            if len(self.wait_requests) > 0 and self.pricing_agent is not None:
-                pricing_state = self.get_pricing_state()
-                pricing_action_array = self.pricing_agent.get_action(pricing_state, epsilon)
 
-                # 覆盖 wait_requests 最后一段新增的 designed_reward
-                self.wait_requests.loc[self.wait_requests.index[-len(pricing_action_array):], 'designed_reward'] = pricing_action_array
-                # ✅ 同步为匹配用的 weight
-                self.wait_requests['weight'] = self.wait_requests['designed_reward']
-
-        # Step 4: both-rg-cruising and/or repositioning decision
-        self.cruise_and_reposition()
-
-        # Step 4.1: track recording
+    
+        # Step 7: repositioning / cruising decision
+        # self.cruise_and_reposition()
+    
+        # Step 8: track recording
         if self.track_recording_flag:
             self.real_time_track_recording()
-
-        # Step 5: update next state for drivers
+    
+        # Step 9: state update
         self.update_state()
-
-        # Step 6： online/offline update()
+    
+        # Step 10: online/offline update
         self.driver_online_offline_update()
-
-        # Step 7: update time
+    
+        # Step 11: time update
         self.update_time()
+    
+        # Step 12: prepare pricing agent transition buffer
+        pricing_state_next = self.get_pricing_state()
+        s1 = [pricing_state_next['time_slice'], 
+                pricing_state_next['supply'], 
+                pricing_state_next['demand']]
+        
+        if functional_pricing:
+            pricing_transitions_buffer[0].append(s0)
+            pricing_transitions_buffer[1].append(pricing_action_current[0])
+            pricing_transitions_buffer[2].append(s1)
+            pricing_transitions_buffer[3].append(reward)
+    
+        return pricing_transitions_buffer
 
-        # Step 8: update pricing agent
-        # ✅ 定价 agent 更新（基于 reward）
-        if self.pricing_agent is not None and self.pricing_agent.strategy == "dynamic":
-            reward = self.evaluate_pricing_result(df_new_matched_requests, len(matched_pair_actual_indexes))
-            self.pricing_agent.update(pricing_state, pricing_action_array, reward)
 
-        return 
 
 # Add changes for pricing module: Andrew
     def get_pricing_state(self):
-        """
-        获取与定价相关的状态
-        """
         return {
-            "trip_distances": self.requests['trip_distance'],  # 每个订单的距离
-            "supply": self.driver_table[self.driver_table['status'] == 0].shape[0],  # 空闲司机数量
-            "demand": self.requests.shape[0],  # 当前订单数量
+            "trip_distances": self.wait_requests['trip_distance'],
+            "supply": self.driver_table[self.driver_table['status'] == 0].shape[0],
+            "demand": self.wait_requests.shape[0],
+            "time_slice": int((self.time - START_TIMESTAMP - 1) / LEN_TIME_SLICE), # use index instead of real time
         }
+
     
     def evaluate_pricing_result(self, retained_orders, total_order_count):
         if total_order_count == 0:
@@ -889,9 +914,3 @@ class Simulator:
         average_price = retained_orders['designed_reward'].mean() if len(retained_orders) > 0 else 0.0
         return acceptance_rate * average_price
 
-
-    def exectue_pricing_action(self, pricing_action):
-        """
-        更新订单表中的价格
-        """
-        self.requests['designed_reward'] = pricing_action  # 使用 PricingAgent 提供的价格更新订单

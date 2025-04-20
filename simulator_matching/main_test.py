@@ -108,7 +108,7 @@ if __name__ == "__main__":
                                         occupancy_rate += simulator.occupancy_rate
                                         print("occupancy_rate",occupancy_rate)
                                         matched_request_num += simulator.matched_requests_num
-                                        # matched_transfer_request_num += simulator.matched_transferred_requests_num
+                                        matched_transfer_request_num += simulator.matched_transferred_requests_num
                                         long_request_num += simulator.long_requests_num
                                         medium_request_num += simulator.medium_requests_num
                                         short_request_num += simulator.short_requests_num

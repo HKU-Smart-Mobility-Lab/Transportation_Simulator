@@ -11,6 +11,8 @@ import os
 from utilities import *
 from sarsa import SarsaAgent
 from matplotlib import pyplot as plt
+from pricing_agent import PricingAgent
+import wandb
 # python D:\Feng\drl_subway_comp\main.py
 
 if __name__ == "__main__":
@@ -20,6 +22,12 @@ if __name__ == "__main__":
     cruise_flag = [True]
     pickup_flag = ['rg']
     delivery_flag = ['rg']
+
+    wandb.login()
+    pricing_refactor = wandb.init(project="simulator_pricing_refactor",
+                                       config={"pricing_method": "dynamic",
+                                               "driver_num": 200,
+                                               "EPOCH":601},)      
 
     # track的格式为[{'driver_1' : [[lng, lat, status, time_a], [lng, lat, status, time_b]],
     # 'driver_2' : [[lng, lat, status, time_a], [lng, lat, status, time_b]]},
@@ -35,12 +43,13 @@ if __name__ == "__main__":
                         env_params['driver_num'] = single_driver_num
                         env_params['maximal_pickup_distance'] = single_max_distance_num
 
+                        pricing_agent = PricingAgent(**pricing_params)
                         simulator = Simulator(**env_params)
                         simulator.reset()
                         track_record = []
                         t = time.time()
 
-                        if env_params['rl_mode'] == "matching":
+                        if env_params['rl_mode'] == "pricing":
                             if simulator.experiment_mode == 'test':
                                 column_list = ['total_reward', 'matched_request_num',
                                                'long_request_num',
@@ -133,6 +142,7 @@ if __name__ == "__main__":
                                     print("wait",waiting_time)
                                     print("matching ratio",matched_request_num/total_request_num)
                                     print("ocu",occupancy_rate)
+                                    
                                     record_array = np.array(
                                         [total_reward, matched_request_num,
                                           long_request_num, matched_long_request_num,
@@ -192,9 +202,9 @@ if __name__ == "__main__":
 
                             elif simulator.experiment_mode == 'train':
                                 print("training process")
-                                epsilons = get_exponential_epsilons(INIT_EPSILON, FINAL_EPSILON, 2500, decay=DECAY,
+                                epsilons = get_exponential_epsilons(INIT_EPSILON, FINAL_EPSILON, 500, decay=DECAY,
                                                                     pre_steps=PRE_STEP)
-                                epsilons = np.concatenate([epsilons, np.zeros(NUM_EPOCH - 2500)])
+                                epsilons = np.concatenate([epsilons, np.zeros(NUM_EPOCH - 500)])
                                 # epsilons = np.zeros(NUM_EPOCH)
                                 total_reward_record = np.zeros(NUM_EPOCH)
 
@@ -204,8 +214,11 @@ if __name__ == "__main__":
                                     simulator.reset()
                                     start_time = time.time()
                                     for step in range(simulator.finish_run_step):
+                                        # print("At step {}".format(step)) # TODO: delete this test print
                                         # step_start_time = time.time()
-                                        dispatch_transitions = simulator.rl_step(epsilons[epoch])
+                                        pricing_transitions = simulator.rl_step(pricing_agent=pricing_agent, epsilon=epsilons[epoch])
+                                        if pricing_agent is not None:
+                                            pricing_agent.perceive(pricing_transitions)
                                         # step_end_time = time.time()
                                         # print("step time",step_end_time-step_start_time)
                                     end_time = time.time()
@@ -218,15 +231,17 @@ if __name__ == "__main__":
                                     print('epoch total reward: ', simulator.total_reward)
                                     print("total orders",simulator.total_request_num)
                                     print("matched orders",simulator.matched_requests_num)
-                                    print("step1:order dispatching:",simulator.time_step1)
-                                    print("step2:reaction",simulator.time_step2)
-                                    print("step3:bootstrap new orders:",simulator.step3)
-                                    print("step4:cruise:", simulator.step4)
-                                    print("step4_1:track_recording",simulator.step4_1)
-                                    print("step5:update state",simulator.step5)                                 
-                                    print("step6:offline update",simulator.step6)
-                                    print("step7: update time",simulator.step7)
-                                    pickle.dump(simulator.record,open("output3/order_record-1103.pickle","wb"))
+                                    matching_ratio = simulator.matched_requests_num/simulator.total_request_num
+                                    print("macthing ratio",matching_ratio)
+                                    
+                                    # 使用 wandb 记录指标
+                                    pricing_refactor.log({
+                                        "epoch": epoch,
+                                        "total_reward": simulator.total_reward,
+                                        "matching_ratio": matching_ratio,
+                                        "epoch_running_time": end_time - start_time,
+                                    })
+
                                     # if epoch % 200 == 0:  # save the result every 200 epochs
                                     #     agent.save_parameters(epoch)
 

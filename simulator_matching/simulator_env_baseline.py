@@ -842,12 +842,10 @@ class Simulator:
         time3 = time.time()
         self.time_step2 += (time3 - time2)
         
-        # self.total_reward += np.sum(df_new_matched_requests['immediate_reward'].values)
         # TJ
         if len(df_new_matched_requests) != 0:
             # TODO: pricing
             self.total_reward += np.sum(df_new_matched_requests['designed_reward'].values)
-            # print("added reward in rl step, reward is {}".format(self.total_reward))
         else:
             self.total_reward += 0
         # TJ
