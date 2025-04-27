@@ -24,14 +24,14 @@ Establish an open-sourced network-based simulation platform for shared mobility 
 
 2. Pull the docker image
 
-  `docker pull jingyunliu663/simulator`
+  `docker pull jingyunliu663/manhattan_mcts`
 
 - after running the code, you can use `docker images` to check whether the image is available
 - the docker image comes with the conda environment `new_simulator` and the mongoDB service running in background within the container
 
 3. Run the docker image & get a docker container
 ```bash
-docker run -d -e CRYPTOGRAPHY_OPENSSL_NO_LEGACY=1 -v /path/to/the/Transportation_Simulator:/simulator/scripts --name simulator jingyunliu663/simulator
+docker run -d -e CRYPTOGRAPHY_OPENSSL_NO_LEGACY=1 -v /path/to/the/Transportation_Simulator:/simulator/scripts --name simulator jingyunliu663/manhattan_mcts
 ```
 - Arguments:
   - `-d`: detach, run in background
@@ -178,9 +178,57 @@ This module determines idle driver movements after order completion. Reinforceme
 
 In dispatch_alg.py, we implement the function LD, we use binary map matching algorithm to dispatch orders. It supports various matching algorithms, including instant reward-based heuristics, Q-learning, and SARSA-based reinforcement learning. Matching weights can be dynamically adjusted based on state-action values learned during training.
 
-##### Experiment
+### Experiment
 
-You can modify the parameters in [config.py](https://github.com/HKU-Smart-Mobility-Lab/Transpotation_Simulator/blob/main/simulator/config.py), and then excute `python main.py`. The records will be recorded in the directory named output.
+You can modify the parameters in [config.py](https://github.com/HKU-Smart-Mobility-Lab/Transpotation_Simulator/blob/main/simulator/config.py), and then excute `python main.py`. The records will be recorded in the directory named output.We conduct a set of reinforcement learning (RL) based experiments to validate the effectiveness of the simulator in supporting algorithm testing for matching and repositioning modules.
+
+Reposition Module
+
+We compare baseline and RL-based repositioning strategies under the following setting:
+- `driver_num`: 200  
+- `order_sample_ratio`: 0.5  
+- `driver_sample_ratio`: 1.0  
+- `maximal_pickup_distance`: 1.25 km  
+
+| Method                 | Platform Revenue | Matching Rate | Occupancy Rate | Pickup Time | Waiting Time |
+|------------------------|------------------|----------------|----------------|--------------|----------------|
+| RandomCruise (Baseline) | 38865             | 18.47%         | 77.51%         | **51.72**     | 193.35         |
+| A2C (RL)               | **40139**         | **19.03%**     | **80.38%**     | 53.15         | **192.33**     |
+
+> A2C improves platform revenue and driver utilization, showing the effectiveness of reinforcement learning in repositioning.
+
+
+Dispatching Module
+
+Under the following matching environment:
+- `driver_num`: 100  
+- `order_sample_ratio`: 0.05  
+- `driver_sample_ratio`: 1.0  
+- `maximal_pickup_distance`: 1.25 km  
+
+| Method                   | Platform Revenue | Matching Rate | Occupancy Rate | Pickup Time | Waiting Time |
+|--------------------------|------------------|----------------|----------------|--------------|----------------|
+| Instant Reward (Baseline) | 20864             | 96.84%         | 10.64%         | 293.22        | 132.63         |
+| Q-Learning               | **21087**         | **97.83%**     | **10.75%**     | **289.15**    | 136.10         |
+| SARSA (Epoch=200)        | 21079             | 97.75%         | 10.74%         | 291.66        | **132.34**     |
+| SARSA (Epoch=400)        | 21055             | 97.65%         | 10.72%         | 291.95        | 133.80         |
+
+> RL-based matching (SARSA, Q-Learning) further improves dispatch performance over the heuristic baseline, demonstrating its capability to learn effective value-based strategies.
+
+Pricing Module
+
+Under the following matching environment:
+- `driver_num`: 100  
+- `order_sample_ratio`: 0.1  
+- `driver_sample_ratio`: 1.0  
+- `maximal_pickup_distance`: 1.25 km  
+
+| Method               | Platform Revenue | Matching Rate | Occupancy Rate | pick_up_time | waiting_time(matching_time) |
+| -------------------- | ---------------- | ------------- | -------------- | ------------ | --------------------------- |
+| FixedPrice(Baseline) | 41761            | **98.76%**    | 15.80%         | **91.65**    | **67.07**                   |
+| DynamicPrice(RL)     | **45786**        | 98.75%        | 15.80%         | 91.69        | 67.14                       |
+
+> RL-based Pricing (Q-Learning) further improves pricing performance over the heuristic baseline, demonstrating its capability to learn effective value-based strategies.
 
 ### Tutorials
 

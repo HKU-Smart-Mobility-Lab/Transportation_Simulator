@@ -1,4 +1,5 @@
 .DS_Store
+<<<<<<< HEAD
 simulator/training_results_record
 output3/
 simulator_matching/episode_0/
@@ -21,3 +22,6 @@ simulator_pricing/modelstraining_results_record
 simulator_pricing/output.log
 simulator_pricing/wandb/
 simulator_pricing/models/
+=======
+simulator/training_results_record
+>>>>>>> 4baec7f (added refactor framework template)
