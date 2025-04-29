@@ -210,8 +210,8 @@ Under the following matching environment:
 |--------------------------|------------------|----------------|----------------|--------------|----------------|
 | Instant Reward (Baseline) | 20864             | 96.84%         | 10.64%         | 293.22        | 132.63         |
 | Q-Learning               | **21087**         | **97.83%**     | **10.75%**     | **289.15**    | 136.10         |
-| SARSA (Epoch=200)        | 21079             | 97.75%         | 10.74%         | 291.66        | **132.34**     |
-| SARSA (Epoch=400)        | 21055             | 97.65%         | 10.72%         | 291.95        | 133.80         |
+| SARSA         | 21079             | 97.75%         | 10.74%         | 291.66        | **132.34**     |
+
 
 > RL-based matching (SARSA, Q-Learning) further improves dispatch performance over the heuristic baseline, demonstrating its capability to learn effective value-based strategies.
 
