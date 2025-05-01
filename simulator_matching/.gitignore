@@ -1,3 +1,4 @@
+<<<<<<< HEAD:simulator_matching/.gitignore
 __pycache__/
 ../static/
 output/
@@ -8,3 +9,16 @@ cache/
 .idea/
 .vscode/
 .ipynb_checkpoints/
+=======
+__pycache__/
+../static/
+output/
+input/
+statistic/
+static/
+cache/
+.idea/
+.vscode/
+.ipynb_checkpoints/
+.DS_Store
+>>>>>>> 4baec7f (added refactor framework template):simulator/.gitignore

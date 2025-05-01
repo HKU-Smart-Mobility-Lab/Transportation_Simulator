@@ -146,8 +146,7 @@ class Simulator:
         self.requests = pd.DataFrame(request_list, columns=request_columns)
 
         # Andrew: PricingAgent
-        initial_pricingState = self.get_pricing_state()
-        self.requests['designed_reward'] =  self.pricing_agent.get_action(initial_pricingState)
+        self.requests['designed_reward'] =  2.5 + 0.5 * ((1000 * self.requests['trip_distance'] - 322).clip(lower=0) / 322) #.astype(int)
         
         self.requests['trip_time']  = self.requests['trip_distance'] / self.vehicle_speed * 3600
         self.requests['matching_time'] = 0
@@ -466,10 +465,8 @@ class Simulator:
                                 original_trip_score = reward
                             else:
                                 next_state = State(end_time_slice, int(dest_grid_id))
-                                max_q = max(score_agent.strategy.q_value_table.get((next_state, a), 0.0) for a in score_agent.strategy.actions)
-
                                 original_trip_score = reward + (
-                                    qTable_params['discount_rate'] ** (end_time_slice - current_time_slice)) * max_q
+                                    qTable_params['discount_rate'] ** (end_time_slice - current_time_slice)) * score_agent.strategy.q_value_table[next_state]
                             weight_array[i] = original_trip_score
                             self.transfer_request_num += 1   
                     
@@ -874,16 +871,14 @@ class Simulator:
             self.record = df_new_matched_requests
         else:
             self.record = pd.concat([self.record,df_new_matched_requests],axis=0,ignore_index=True)
-        self.matched_requests_num += len(df_new_matched_requests)
+
         time3 = time.time()
         self.time_step2 += (time3 - time2)
         
-        # self.total_reward += np.sum(df_new_matched_requests['immediate_reward'].values)
         # TJ
         if len(df_new_matched_requests) != 0:
             # TODO: pricing
             self.total_reward += np.sum(df_new_matched_requests['designed_reward'].values)
-            # print("added reward in rl step, reward is {}".format(self.total_reward))
         else:
             self.total_reward += 0
         # TJ
@@ -1050,7 +1045,7 @@ class Simulator:
         self.occupancy_rate = self.cumulative_on_trip_driver_num / (
                 (1 + self.current_step) * self.driver_table.shape[0])
     
-        print("--------------occupancy rate: ", self.occupancy_rate)
+        # print("--------------occupancy rate: ", self.occupancy_rate)
     
         # Update matched and waiting requests if not end of episode
         if self.end_of_episode == 0:

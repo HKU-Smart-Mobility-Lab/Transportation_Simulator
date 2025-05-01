@@ -55,9 +55,12 @@ docker run -d -e CRYPTOGRAPHY_OPENSSL_NO_LEGACY=1 -v /path/to/the/Transportation
 4. Enter the interactive shell of the conatiner `simulator`
 ```bash
 docker exec -it simulator bash -c "cd / && exec bash"
+
 ```
 
-- After enter the interactive shell , you will be in the working directory `/simulator`, you can navigate yourself to  `/simulator/scripts` directory (the directory you choose to mount to) to run the main function
+- After enter the interactive shell , you will be in the working directory `/simulator`(the directory you choose to mount to), you can navigate yourself to  `/simulator/scripts` directory to run the main function
+```
+
 
 
 ### Download Data
@@ -210,27 +213,67 @@ We compare baseline and RL-based repositioning strategies under the following se
 
 Dispatching Module
 
+
 Under the following matching environment:
 - `driver_num`: 100  
 - `order_sample_ratio`: 0.05  
 - `driver_sample_ratio`: 1.0  
-- `maximal_pickup_distance`: 1.00 km  
+- `maximal_pickup_distance`: 1.25 km  
 
 | Method                   | Platform Revenue | Matching Rate | Occupancy Rate | Pickup Time | Waiting Time |
 |--------------------------|------------------|----------------|----------------|--------------|----------------|
 | Instant Reward (Baseline) | 20864             | 96.84%         | 10.64%         | 293.22        | 132.63         |
 | Q-Learning               | **21087**         | **97.83%**     | **10.75%**     | **289.15**    | 136.10         |
-| SARSA (Epoch=200)        | 21079             | 97.75%         | 10.74%         | 291.66        | **132.34**     |
-| SARSA (Epoch=400)        | 21055             | 97.65%         | 10.72%         | 291.95        | 133.80         |
+| SARSA         | 21079             | 97.75%         | 10.74%         | 291.66        | **132.34**     |
+
 
 > RL-based matching (SARSA, Q-Learning) further improves dispatch performance over the heuristic baseline, demonstrating its capability to learn effective value-based strategies.
 
-### Tutorials
+Pricing Module
 
+Under the following matching environment:
+- `driver_num`: 100  
+- `order_sample_ratio`: 0.1  
+- `driver_sample_ratio`: 1.0  
+- `maximal_pickup_distance`: 1.25 km  
 
+| Method               | Platform Revenue | Matching Rate | Occupancy Rate | pick_up_time | waiting_time(matching_time) |
+| -------------------- | ---------------- | ------------- | -------------- | ------------ | --------------------------- |
+| FixedPrice(Baseline) | 41761            | **98.76%**    | 15.80%         | **91.65**    | **67.07**                   |
+| DynamicPrice(RL)     | **45786**        | 98.75%        | 15.80%         | 91.69        | 67.14                       |
 
+> RL-based Pricing (Q-Learning) further improves pricing performance over the heuristic baseline, demonstrating its capability to learn effective value-based strategies.
 
+### Training & Testing
 
+#### Training
+- **Run**:  
+  ```bash
+  # e.g. Matching module
+  cd simulator_matching  
+  python main_refactor.py
+  ```
+- **Config (`config.py`)**:
+  ```python
+  experiment_mode = 'train'
+  rl_mode = 'matching'           # or 'pricing', 'reposition'
+  method = 'sarsa_no_subway'     # e.g. 'q_learning'
+  pricing_strategy = 'dynamic_price'  # pricing only
+  reposition_method = 'random_cruise' # reposition only
+  ```
+- **Hyperparams**: loaded from `load_path` in `path.py`
+
+#### Testing
+- **Run**:
+  ```bash
+  cd simulator_matching  # or pricing/reposition
+  python main.py
+  ```
+- **Config (`config.py`)**:
+  ```python
+  experiment_mode = 'test'
+  # other fields same as in training
+  ```
 
 
 ### Technical questions
@@ -251,6 +294,8 @@ This simulator is supported by the [Smart Mobility Lab](	https://github.com/HKU-
 ### Ownership
 
 The ownership of this repository is Prof. Hai Yang, Dr. Siyuan Feng from ITS Lab at The Hong Kong University of Science and Technology and Dr. Jintao Ke from SML at The Univerisity of Hong Kong.
+
+
 
 
 

@@ -15,12 +15,12 @@ env_params = {
     "maximum_price_passenger_can_tolerate_std": 0,  # $
     'maximal_pickup_distance': 1,  # km TODO
     'request_interval': 60,  #note: need to be the same as 'delta_t'
-    'cruise_flag': False,
+    'cruise_flag': True, # True TODO
     'delivery_mode': 'rg',
     'pickup_mode': 'rg',
     'max_idle_time': 300,
     'cruise_mode': 'random',
-    'reposition_flag': True,
+    'reposition_flag': False,
     'eligible_time_for_reposition': 300,  # s
     'reposition_mode': '',
     'track_recording_flag': False,
@@ -39,7 +39,7 @@ env_params = {
     'road_information_mode': 'load',
     'price_increasing_percentage': 0,
     'rl_mode': 'matching',  # reposition and matching
-    'method': 'dqn', # 'q_learning','sarsa_no_subway','instant_reward_no_subway','dqn'   #  rl for matching
+    'method': 'sarsa_no_subway', # 'q_learning','sarsa_no_subway','instant_reward_no_subway','dqn'   #  rl for matching
     'reposition_method': 'A2C',  # A2C, A2C_global_aware, random_cruise, stay  # rl for repositioning
     'dayparting': False,
     # if true, simulator_env will compute information based on time periods in a day, e.g. 'morning', 'afternoon'
