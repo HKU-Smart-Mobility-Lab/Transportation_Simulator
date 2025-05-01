@@ -230,12 +230,36 @@ Under the following matching environment:
 
 > RL-based Pricing (Q-Learning) further improves pricing performance over the heuristic baseline, demonstrating its capability to learn effective value-based strategies.
 
-### Tutorials
+### Training & Testing
 
+#### Training
+- **Run**:  
+  ```bash
+  # e.g. Matching module
+  cd simulator_matching  
+  python main_refactor.py
+  ```
+- **Config (`config.py`)**:
+  ```python
+  experiment_mode = 'train'
+  rl_mode = 'matching'           # or 'pricing', 'reposition'
+  method = 'sarsa_no_subway'     # e.g. 'q_learning'
+  pricing_strategy = 'dynamic_price'  # pricing only
+  reposition_method = 'random_cruise' # reposition only
+  ```
+- **Hyperparams**: loaded from `load_path` in `path.py`
 
-
-
-
+#### Testing
+- **Run**:
+  ```bash
+  cd simulator_matching  # or pricing/reposition
+  python main.py
+  ```
+- **Config (`config.py`)**:
+  ```python
+  experiment_mode = 'test'
+  # other fields same as in training
+  ```
 
 
 ### Technical questions

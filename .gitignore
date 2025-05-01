@@ -1,5 +1,4 @@
 .DS_Store
-<<<<<<< HEAD
 simulator/training_results_record
 output3/
 simulator_matching/episode_0/
@@ -9,6 +8,7 @@ simulator_matching/episode_600/
 simulator_matching/matching_strategy_base/episode_0/
 simulator_matching/matching_strategy_base/episode_200/
 simulator_matching/matching_strategy_base/episode_400/
+simulator_matching/matching_strategy_base/episode_1200/
 simulator_matching/output_rl_sarsa.log
 simulator_matching/models/
 simulator_matching/output3/
@@ -22,6 +22,6 @@ simulator_pricing/modelstraining_results_record
 simulator_pricing/output.log
 simulator_pricing/wandb/
 simulator_pricing/models/
-=======
+simulator_matching/output_rl_sarsa.log
 simulator/training_results_record
->>>>>>> 4baec7f (added refactor framework template)
+
