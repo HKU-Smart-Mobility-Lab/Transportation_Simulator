@@ -16,6 +16,17 @@ Establish an open-sourced network-based simulation platform for shared mobility 
 
 • Based on a vehicle utilization based validation task, some RL based experiments, and one task for theoretical model evaluation, the simulator is validated to be effective and efficient for ride-sourcing related researches. In the future, the simulator can be easily modified for completing other tasks, such as dynamic pricing, ride-pooling service operations, control of shared autonomous vehicles, etc.
 
+###  Cite
+@article{feng2024multi,
+  title={A multi-functional simulation platform for on-demand ride service operations},
+  author={Feng, Siyuan and Chen, Taijie and Zhang, Yuhao and Ke, Jintao and Zheng, Zhengfei and Yang, Hai},
+  journal={Communications in Transportation Research},
+  volume={4},
+  pages={100141},
+  year={2024},
+  publisher={Elsevier}
+}
+
 ### Install
 
 1. Download the code
@@ -31,7 +42,7 @@ Establish an open-sourced network-based simulation platform for shared mobility 
 
 3. Run the docker image & get a docker container
 ```bash
-docker run -d -e CRYPTOGRAPHY_OPENSSL_NO_LEGACY=1 -v /path/to/the/Transportation_Simulator:/simulator/scripts --name simulator jingyunliu663/manhattan_mcts
+docker run -d -e CRYPTOGRAPHY_OPENSSL_NO_LEGACY=1 -v /path/to/the/Transportation_Simulator/simulator_module:/simulator/scripts --name simulator jingyunliu663/manhattan_mcts
 ```
 - Arguments:
   - `-d`: detach, run in background
@@ -48,6 +59,8 @@ docker exec -it simulator bash -c "cd / && exec bash"
 ```
 
 - After enter the interactive shell , you will be in the working directory `/simulator`(the directory you choose to mount to), you can navigate yourself to  `/simulator/scripts` directory to run the main function
+```
+
 
 
 ### Download Data
@@ -165,16 +178,16 @@ re = mycollect.find_one(re_data)
 ```
 
 
-##### Price Module
+### Price Module
 
 This module implements dynamic pricing based on trip distance, supply-demand conditions, and passenger cancellation behavior. The pricing agent can be configured as a static rule-based system or trained using tabular Q-learning to adaptively maximize platform revenue while retaining customer acceptance.
 
-##### Cruising and Repositioning Module
+### Cruising and Repositioning Module
 
 This module determines idle driver movements after order completion. Reinforcement learning strategies such as A2C or rule-based methods (random cruise, stay) are supported. It helps optimize system-wide occupancy rate and improves driver utilization across the grid.
 
 
-##### Dispatching Module
+### Dispatching Module
 
 In dispatch_alg.py, we implement the function LD, we use binary map matching algorithm to dispatch orders. It supports various matching algorithms, including instant reward-based heuristics, Q-learning, and SARSA-based reinforcement learning. Matching weights can be dynamically adjusted based on state-action values learned during training.
 
@@ -199,6 +212,7 @@ We compare baseline and RL-based repositioning strategies under the following se
 
 
 Dispatching Module
+
 
 Under the following matching environment:
 - `driver_num`: 100  
@@ -280,18 +294,6 @@ This simulator is supported by the [Smart Mobility Lab](	https://github.com/HKU-
 ### Ownership
 
 The ownership of this repository is Prof. Hai Yang, Dr. Siyuan Feng from ITS Lab at The Hong Kong University of Science and Technology and Dr. Jintao Ke from SML at The Univerisity of Hong Kong.
-
-###  Cite
-
-@article{feng2024multi,
-  title={A multi-functional simulation platform for on-demand ride service operations},
-  author={Feng, Siyuan and Chen, Taijie and Zhang, Yuhao and Ke, Jintao and Zheng, Zhengfei and Yang, Hai},
-  journal={Communications in Transportation Research},
-  volume={4},
-  pages={100141},
-  year={2024},
-  publisher={Elsevier}
-}
 
 
 
