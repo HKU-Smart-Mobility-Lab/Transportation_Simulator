@@ -208,6 +208,10 @@ We compare baseline and RL-based repositioning strategies under the following se
 | RandomCruise (Baseline) | 38865             | 18.47%         | 77.51%         | **51.72**     | 193.35         |
 | A2C (RL)               | **40139**         | **19.03%**     | **80.38%**     | 53.15         | **192.33**     |
 
+
+below is the reward curve of A2C strategy in training process
+![f73489ed668ad2d8f0cef2423a56d93](https://github.com/user-attachments/assets/d73cfb29-64c9-4858-8891-2630d2de0123)
+
 > A2C improves platform revenue and driver utilization, showing the effectiveness of reinforcement learning in repositioning.
 
 
@@ -227,6 +231,10 @@ Under the following matching environment:
 | SARSA         | 21079             | 97.75%         | 10.74%         | 291.66        | **132.34**     |
 
 
+below is the reward curve of SARSA strategy in training process
+![dabd14c41f573948d72d36527aa24b7](https://github.com/user-attachments/assets/a1d33a2e-a2b3-4185-8ff8-e5cd22cf7633)
+
+
 > RL-based matching (SARSA, Q-Learning) further improves dispatch performance over the heuristic baseline, demonstrating its capability to learn effective value-based strategies.
 
 Pricing Module
@@ -241,6 +249,10 @@ Under the following matching environment:
 | -------------------- | ---------------- | ------------- | -------------- | ------------ | --------------------------- |
 | FixedPrice(Baseline) | 41761            | **98.76%**    | 15.80%         | **91.65**    | **67.07**                   |
 | DynamicPrice(RL)     | **45786**        | 98.75%        | 15.80%         | 91.69        | 67.14                       |
+
+
+below is the reward curve of Dynamic Price strategy in training process
+![239c0843f874692bf71c2499eaf6737](https://github.com/user-attachments/assets/3de2eae9-5ad2-4e1b-856f-b0bf94f224d9)
 
 > RL-based Pricing (Q-Learning) further improves pricing performance over the heuristic baseline, demonstrating its capability to learn effective value-based strategies.
 
