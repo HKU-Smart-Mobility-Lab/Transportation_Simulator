@@ -68,7 +68,7 @@ Here, we provide you data for Manhattan that we used in our experiments. You can
 
 ### Survey Data
 We conducted a survey in NYC, and one hundred people participated in this survey. The content and results of the questionnaire can be found in the Survey_E-hailing_Taxi_Service_Studies.xlsx file. Hope that this data can help you for your research. And if you use these data in your research, please cite our paper: 
-Feng S., Chen T., Zhang Y., Ke J.* & H. Yang, 2023. A multi-functional simulation platform for on-demand ride service operations. Preprint at ArXiv:2303.12336. https://doi.org/10.48550/arXiv.2303.12336.
+Feng, S., Chen, T., Zhang, Y., Ke, J., Zheng, Z., & Yang, H. (2024). A multi-functional simulation platform for on-demand ride service operations. Communications in Transportation Research, 4, 100141.
 
 ### File Structure
 
