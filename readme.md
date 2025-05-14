@@ -31,7 +31,7 @@ Establish an open-sourced network-based simulation platform for shared mobility 
 
 1. Download the code
 
-  `git clone git@github.com:HKU-Smart-Mobility-Lab/Ride-hailing-Simulator.git`
+  `git clone git@github.com:HKU-Smart-Mobility-Lab/Transportation_Simulator.git`
 
 2. Pull the docker image
 
@@ -42,7 +42,7 @@ Establish an open-sourced network-based simulation platform for shared mobility 
 
 3. Run the docker image & get a docker container
 ```bash
-docker run -d -e CRYPTOGRAPHY_OPENSSL_NO_LEGACY=1 -v /path/to/the/Ride-hailing-Simulator/simulator_module:/simulator/scripts --name simulator jingyunliu663/manhattan_mcts
+docker run -d -e CRYPTOGRAPHY_OPENSSL_NO_LEGACY=1 -v /path/to/the/Transportation_Simulator/simulator_module:/simulator/scripts --name simulator jingyunliu663/manhattan_mcts
 ```
 - Arguments:
   - `-d`: detach, run in background
@@ -292,7 +292,7 @@ below is the reward curve of Dynamic Price strategy in training process
 
 We welcome your contributions.
 
-- Please report bugs and improvements by submitting [GitHub issue](https://github.com/HKU-Smart-Mobility-Lab/Ride-hailing-Simulator/issues).
+- Please report bugs and improvements by submitting [GitHub issue](https://github.com/HKU-Smart-Mobility-Lab/Transportation_Simulator/issues).
 - Submit your contributions using [pull requests](https://github.com/HKU-Smart-Mobility-Lab/Transpotation_Simulator/pulls). 
 
 
