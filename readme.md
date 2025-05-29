@@ -62,7 +62,7 @@ docker exec -it simulator bash -c "cd / && exec bash"
 
 - After enter the interactive shell , you will be in the working directory `/simulator`(the directory you choose to mount to), you can navigate yourself to  `/simulator/scripts` directory to run the main function
 
-[Download the video](https://github.com/HKU-Smart-Mobility-Lab/Transportation_Simulator/blob/main/demo.mp4)
+![Demo](https://github.com/HKU-Smart-Mobility-Lab/Transportation_Simulator/blob/main/demo.gif)
 
 
 ### Download Data
