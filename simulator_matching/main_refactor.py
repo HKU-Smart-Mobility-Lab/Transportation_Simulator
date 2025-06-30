@@ -13,15 +13,11 @@ warnings.filterwarnings("ignore")
 import os
 from utilities import *
 from matplotlib import pyplot as plt
-<<<<<<< HEAD:simulator_matching/main_refactor.py
-
-# python D:\Feng\drl_subway_comp\main.py    
 
 =======
 from A2C import * # you may comment this import if you are running matching
 
-# python D:\Feng\drl_subway_comp\main.py
->>>>>>> 6a9d3e4 (fix config, fix keras import):simulator/main.py
+
 
 if __name__ == "__main__":
     # Andrew: set up logger
@@ -116,7 +112,7 @@ if __name__ == "__main__":
                                 epsilons = np.concatenate([epsilons, np.zeros(NUM_EPOCH - 2500)])
                                 # epsilons = np.zeros(NUM_EPOCH)
                                 total_reward_record = np.zeros(NUM_EPOCH)
-<<<<<<< HEAD:simulator_matching/main_refactor.py
+
                                 # Initialize SimulatorTrainer
                                 trainer = SimulatorTrainer(
                                     simulator=simulator,
@@ -134,7 +130,7 @@ if __name__ == "__main__":
                                         'flag_load': FLAG_LOAD,
                                     }
                                 )
-=======
+
                                 agent = None
                                 if simulator.method in ['sarsa', 'sarsa_no_subway', 'sarsa_travel_time',
                                                         'sarsa_travel_time_no_subway', 'sarsa_total_travel_time',
@@ -173,7 +169,6 @@ if __name__ == "__main__":
                                     pickle.dump(simulator.record,open("output/order_record-1103.pickle","wb"))
                                     # if epoch % 200 == 0:  # save the result every 200 epochs
                                     #     agent.save_parameters(epoch)
->>>>>>> 6a9d3e4 (fix config, fix keras import):simulator/main.py
 
 
                             for step in tqdm(range(simulator.finish_run_step)):
